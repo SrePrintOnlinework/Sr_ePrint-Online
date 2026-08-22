@@ -9,13 +9,14 @@ const razorpay = new Razorpay({
 export async function POST() {
   try {
     const options = {
-      amount: 9900, // ₹99 = 99 * 100 (paise)
+      amount: 9900,
       currency: 'INR',
       receipt: 'receipt_' + Date.now(),
     };
     const order = await razorpay.orders.create(options);
     return NextResponse.json({ orderId: order.id });
   } catch (error) {
+    console.error('Order creation error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
