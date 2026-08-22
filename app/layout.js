@@ -1,14 +1,12 @@
 export const metadata = {
-  title: "ePrint Online - Pay ₹99",
-  description: "Instant PDF download after payment",
+  title: 'ePrint Online',
+  description: 'Pay and download your PDF receipt instantly',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: 'Arial, sans-serif' }}>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
