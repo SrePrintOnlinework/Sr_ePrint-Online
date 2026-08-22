@@ -17,7 +17,6 @@ export default function Home() {
   const handlePayment = async () => {
     setLoading(true);
     try {
-      // 1. Script load చేయాలి
       const isLoaded = await loadRazorpayScript();
       if (!isLoaded) {
         alert('Razorpay SDK failed to load. Check your internet.');
@@ -25,22 +24,18 @@ export default function Home() {
         return;
       }
 
-      // 2. మన API నుండి Order ID తీసుకోవాలి
       const orderRes = await fetch('/api/create-order', { method: 'POST' });
       const orderData = await orderRes.json();
       if (!orderData.orderId) throw new Error('Failed to create order');
 
-      // 3. Razorpay Checkout Options
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: '9900',
         currency: 'INR',
-        name: 'Your Company Name',
-        description: 'Premium Access - ₹99',
+        name: 'ePrint Online',
+        description: 'Premium PDF Access - ₹99',
         order_id: orderData.orderId,
         handler: async function (response) {
-          // ✅ Payment Success ఇక్కడే వస్తుంది
-          // 4. మన Verify API కి పంపి, PDF ని download చేద్దాం
           const verifyRes = await fetch('/api/verify-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -57,7 +52,6 @@ export default function Home() {
             return;
           }
 
-          // 5. PDF ని Blob గా తీసుకుని ఆటోమేటిక్ డౌన్లోడ్ ట్రిగ్గర్ చేయడం
           const blob = await verifyRes.blob();
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -67,15 +61,14 @@ export default function Home() {
           a.click();
           a.remove();
           window.URL.revokeObjectURL(url);
-
-          alert('Payment Successful! PDF downloaded.');
+          alert('✅ Payment Successful! PDF downloaded.');
         },
         prefill: {
-          name: 'John Doe',
-          email: 'john@example.com',
+          name: 'Demo User',
+          email: 'demo@example.com',
           contact: '9999999999',
         },
-        theme: { color: '#F37254' },
+        theme: { color: '#1a73e8' },
       };
 
       const razorpay = new window.Razorpay(options);
@@ -89,16 +82,41 @@ export default function Home() {
   };
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '100px' }}>
-      <h1>Premium Access</h1>
-      <p>Pay ₹99 and get your PDF instantly</p>
-      <button 
-        onClick={handlePayment} 
-        disabled={loading}
-        style={{ padding: '15px 40px', fontSize: '20px', cursor: 'pointer' }}
-      >
-        {loading ? 'Processing...' : 'Pay ₹99'}
-      </button>
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100vh',
+      flexDirection: 'column',
+      backgroundColor: '#f5f7fa'
+    }}>
+      <div style={{ 
+        background: 'white', 
+        padding: '40px', 
+        borderRadius: '16px', 
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        textAlign: 'center'
+      }}>
+        <h1 style={{ color: '#1a73e8' }}>📄 ePrint Online</h1>
+        <p>Pay ₹99 and get your PDF receipt instantly</p>
+        <button 
+          onClick={handlePayment} 
+          disabled={loading}
+          style={{ 
+            padding: '14px 50px', 
+            fontSize: '20px', 
+            fontWeight: 'bold',
+            backgroundColor: loading ? '#ccc' : '#1a73e8',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            marginTop: '20px'
+          }}
+        >
+          {loading ? 'Processing...' : '💳 Pay ₹99'}
+        </button>
+      </div>
     </div>
   );
 }
