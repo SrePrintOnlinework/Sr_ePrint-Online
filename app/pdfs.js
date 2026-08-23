@@ -9,4 +9,9 @@ export const pdfs = [
     name: 'Sample PDF 2',
     file: 'sample2.pdf',
   },
+    {
+    id: 'raj-003',
+    name: 'Sample PDF 3',
+    file: 'newdoc08112026.pdf',
+  },
 ];
