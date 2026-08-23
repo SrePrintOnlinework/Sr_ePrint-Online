@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { pdfs } from '../pdfs';
 
 export async function POST(request) {
   try {
@@ -11,6 +12,7 @@ export async function POST(request) {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
+      pdfId,
     } = body;
 
     // Razorpay signature verification
@@ -26,11 +28,21 @@ export async function POST(request) {
       );
     }
 
-    // Actual PDF file
+    // Find selected PDF
+    const selectedPdf = pdfs.find((pdf) => pdf.id === pdfId);
+
+    if (!selectedPdf) {
+      return NextResponse.json(
+        { error: 'Selected PDF not found' },
+        { status: 404 }
+      );
+    }
+
+    // Read selected PDF
     const pdfPath = path.join(
       process.cwd(),
       'Public',
-      'raj-birthcertificate2.pdf'
+      selectedPdf.file
     );
 
     const pdfBuffer = await readFile(pdfPath);
@@ -39,7 +51,7 @@ export async function POST(request) {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="receipt_${razorpay_payment_id}.pdf"`,
+        'Content-Disposition': `attachment; filename="${selectedPdf.file}"`,
         'Content-Length': pdfBuffer.length.toString(),
       },
     });
