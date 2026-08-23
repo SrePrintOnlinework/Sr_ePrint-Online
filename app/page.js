@@ -24,7 +24,7 @@ export default function Home() {
         return;
       }
 
-      const orderRes = await fetch('/api/create-order', { method: 'POST' });
+      const orderRes = await fetch('/create-order', { method: 'POST' });
       if (!orderRes.ok) {
         const errorText = await orderRes.text();
         throw new Error(`Order API error (${orderRes.status}): ${errorText.slice(0, 100)}`);
@@ -40,7 +40,7 @@ export default function Home() {
         description: 'Premium PDF Access - ₹99',
         order_id: orderData.orderId,
         handler: async function (response) {
-          const verifyRes = await fetch('/api/verify-payment', {
+          const verifyRes = await fetch('/verify-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
