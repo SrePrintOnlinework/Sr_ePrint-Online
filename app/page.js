@@ -44,6 +44,12 @@ export default function Home() {
 
       const orderRes = await fetch('/create-order', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pdfId: selectedPdf.id,
+        }),
       });
 
       if (!orderRes.ok) {
@@ -58,10 +64,14 @@ export default function Home() {
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: '9900',
+
+        amount: orderData.amount || 9900,
         currency: 'INR',
-        name: 'ePrint Online',
-        description: `PDF Access - ${selectedPdf.name}`,
+
+        name: 'SR INTERNET Online Centre',
+
+        description: `Digital PDF - ${selectedPdf.name}`,
+
         order_id: orderData.orderId,
 
         handler: async function (response) {
@@ -80,8 +90,7 @@ export default function Home() {
             });
 
             if (!verifyRes.ok) {
-              const errorText = await verifyRes.text();
-              throw new Error(errorText || 'Payment verification failed');
+              throw new Error('Payment verification failed');
             }
 
             const blob = await verifyRes.blob();
@@ -101,7 +110,9 @@ export default function Home() {
             alert('✅ Payment Successful! PDF downloaded.');
           } catch (error) {
             console.error(error);
-            alert('Payment verification failed.');
+            alert(
+              'Payment was received, but PDF verification/download failed. Please contact support.'
+            );
           }
         },
 
@@ -112,14 +123,14 @@ export default function Home() {
         },
 
         theme: {
-          color: '#1a73e8',
+          color: '#1565c0',
         },
       };
 
       const razorpay = new window.Razorpay(options);
 
       razorpay.on('payment.failed', function () {
-        alert('Payment failed. Please try again.');
+        alert('❌ Payment failed. Please try again.');
       });
 
       razorpay.open();
@@ -137,40 +148,92 @@ export default function Home() {
   );
 
   return (
-    <div
+    <main
       style={{
         minHeight: '100vh',
-        background: '#f5f7fa',
-        padding: '30px 15px',
+        background: '#f4f7fb',
         fontFamily: 'Arial, sans-serif',
       }}
     >
-      <div
+      {/* HEADER */}
+      <header
         style={{
-          maxWidth: '700px',
-          margin: '0 auto',
+          background: '#1565c0',
+          color: 'white',
+          padding: '24px 15px',
+          textAlign: 'center',
         }}
       >
-        <h1
+        <div
           style={{
-            textAlign: 'center',
-            color: '#1a73e8',
-            marginBottom: '10px',
+            maxWidth: '800px',
+            margin: 'auto',
           }}
         >
-          📄 ePrint Online
-        </h1>
+          <div style={{ fontSize: '42px' }}>📄</div>
 
-        <p
+          <h1
+            style={{
+              margin: '5px 0',
+              fontSize: '30px',
+            }}
+          >
+            SR INTERNET Online Centre
+          </h1>
+
+          <p
+            style={{
+              margin: '8px 0 0',
+              fontSize: '16px',
+              opacity: 0.95,
+            }}
+          >
+            Digital PDF & Online Services
+          </p>
+        </div>
+      </header>
+
+      {/* MAIN */}
+      <section
+        style={{
+          maxWidth: '800px',
+          margin: '0 auto',
+          padding: '25px 15px 40px',
+        }}
+      >
+        {/* INTRO CARD */}
+        <div
           style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '14px',
+            marginBottom: '20px',
             textAlign: 'center',
-            color: '#555',
-            marginBottom: '25px',
+            boxShadow: '0 3px 12px rgba(0,0,0,0.07)',
           }}
         >
-          Select your PDF and pay ₹99 to download
-        </p>
+          <h2
+            style={{
+              margin: '0 0 8px',
+              color: '#222',
+            }}
+          >
+            Online PDF Downloads
+          </h2>
 
+          <p
+            style={{
+              margin: 0,
+              color: '#666',
+              lineHeight: 1.6,
+            }}
+          >
+            Select the required PDF, make a secure payment of ₹99,
+            and download your PDF instantly.
+          </p>
+        </div>
+
+        {/* SEARCH */}
         <input
           type="text"
           placeholder="🔎 Search PDF..."
@@ -179,101 +242,25 @@ export default function Home() {
           style={{
             width: '100%',
             boxSizing: 'border-box',
-            padding: '14px',
+            padding: '15px',
             fontSize: '16px',
-            border: '1px solid #ccc',
-            borderRadius: '10px',
+            border: '1px solid #d5dbe3',
+            borderRadius: '12px',
+            outline: 'none',
             marginBottom: '15px',
+            background: 'white',
           }}
         />
 
+        {/* PDF LIST */}
         <div
           style={{
             background: 'white',
-            borderRadius: '12px',
+            borderRadius: '14px',
             padding: '10px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            boxShadow: '0 3px 12px rgba(0,0,0,0.07)',
           }}
         >
-          {filteredPdfs.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '20px' }}>
-              No PDF found.
-            </p>
-          ) : (
-            filteredPdfs.map((pdf) => (
-              <div
-                key={pdf.id}
-                onClick={() => setSelectedPdf(pdf)}
-                style={{
-                  padding: '16px',
-                  margin: '6px 0',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  border:
-                    selectedPdf?.id === pdf.id
-                      ? '2px solid #1a73e8'
-                      : '1px solid #ddd',
-                  background:
-                    selectedPdf?.id === pdf.id
-                      ? '#eef5ff'
-                      : 'white',
-                }}
-              >
-                <strong>📄 {pdf.name}</strong>
-
-                {selectedPdf?.id === pdf.id && (
-                  <span
-                    style={{
-                      float: 'right',
-                      color: '#1a73e8',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    ✓ Selected
-                  </span>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-
-        {selectedPdf && (
-          <div
+          <h3
             style={{
-              marginTop: '20px',
-              padding: '20px',
-              background: 'white',
-              borderRadius: '12px',
-              textAlign: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            }}
-          >
-            <p>
-              Selected PDF:
-              <br />
-              <strong>{selectedPdf.name}</strong>
-            </p>
-
-            <button
-              onClick={handlePayment}
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '15px',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                background: loading ? '#aaa' : '#1a73e8',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {loading ? 'Processing...' : '💳 Pay ₹99 & Download'}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+              padding: '8px 10px',
