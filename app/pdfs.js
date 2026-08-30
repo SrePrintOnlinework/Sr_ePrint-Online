@@ -1,13 +1,13 @@
 export const pdfs = [
   {
-    id: 'sample-001',
-    name: 'Sample PDF',
-    file: 'sample1.pdf
+    id: 'birth-001',
+    name: 'Birth Application',
+    file: 'birth-application.pdf',
   },
   {
-    id: 'sample-002',
-    name: 'Sample PDF2',
-    file: 'sample.pdf',
+    id: 'sample-001',
+    name: 'Sample PDF',
+    file: 'sample1.pdf',
   },
   {
     id: 'newdoc-003',
