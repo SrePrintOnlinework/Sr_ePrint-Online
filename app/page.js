@@ -923,39 +923,35 @@ export default function Home() {
 
         {/* FOOTER */}
 
-        <div
-          style={{
-            textAlign: 'center',
-            marginTop: '30px',
-            color: '#777',
-            fontSize: '13px',
-          }}
-        >
-          <p>
-          <div
+        {/* FOOTER */}
 
+<div
+  style={{
+    textAlign: 'center',
+    marginTop: '30px',
+    color: '#777',
+    fontSize: '13px',
+  }}
+>
   <p style={{ marginBottom: '10px' }}>
-  <a
-    href="/privacy"
-    style={{
-      color: '#1565c0',
-      textDecoration: 'none',
-      fontWeight: 'bold',
-    }}
-  >
-    Privacy Policy
-  </a>
-</p>
-            Secure payment powered by Razorpay
-          </p>
+    <a
+      href="/privacy"
+      style={{
+        color: '#1565c0',
+        textDecoration: 'none',
+        fontWeight: 'bold',
+      }}
+    >
+      Privacy Policy
+    </a>
+  </p>
 
-          <p>
-            © 2026 SR E-Print Online.
-            All rights reserved.
-          </p>
-        </div>
+  <p>
+    Secure payment powered by Razorpay
+  </p>
 
-      </section>
-    </main>
-  );
-}
+  <p>
+    © 2026 SR E-Print Online.
+    All rights reserved.
+  </p>
+</div>
