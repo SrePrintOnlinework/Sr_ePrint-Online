@@ -25,7 +25,6 @@ export default function Home() {
         'https://checkout.razorpay.com/v1/checkout.js';
 
       script.onload = () => resolve(true);
-
       script.onerror = () => resolve(false);
 
       document.body.appendChild(script);
@@ -45,15 +44,11 @@ export default function Home() {
     setLoading(true);
 
     try {
-      // Load Razorpay
       const isLoaded =
         await loadRazorpayScript();
 
       if (!isLoaded) {
-        alert(
-          'Razorpay SDK failed to load.'
-        );
-
+        alert('Razorpay SDK failed to load.');
         setLoading(false);
         return;
       }
@@ -218,9 +213,7 @@ export default function Home() {
               );
 
             } catch (error) {
-              console.error(
-                error
-              );
+              console.error(error);
 
               alert(
                 'Payment was received, but PDF verification/download failed. Please contact support.'
@@ -333,8 +326,7 @@ export default function Home() {
 
           <p
             style={{
-              margin:
-                '8px 0 0',
+              margin: '8px 0 0',
               fontSize: '16px',
               opacity: 0.95,
             }}
@@ -370,8 +362,7 @@ export default function Home() {
         >
           <h2
             style={{
-              margin:
-                '0 0 8px',
+              margin: '0 0 8px',
               color: '#222',
             }}
           >
@@ -389,6 +380,195 @@ export default function Home() {
             make a secure payment of
             ₹99, and download your PDF
             instantly.
+          </p>
+        </div>
+
+        {/* ABOUT US */}
+
+        <div
+          style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '14px',
+            marginBottom: '20px',
+            boxShadow:
+              '0 3px 12px rgba(0,0,0,0.07)',
+          }}
+        >
+          <h2
+            style={{
+              margin: '0 0 10px',
+              color: '#222',
+            }}
+          >
+            About SR E-Print Online
+          </h2>
+
+          <p
+            style={{
+              margin: '0 0 10px',
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            SR E-Print Online is a digital
+            document service platform that
+            provides downloadable PDF and
+            digital document files to
+            customers online.
+          </p>
+
+          <p
+            style={{
+              margin: '0 0 10px',
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            Customers can browse the
+            available digital products,
+            select the required file,
+            make an online payment, and
+            download the purchased digital
+            file after successful payment.
+          </p>
+
+          <p
+            style={{
+              margin: 0,
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            Our aim is to provide convenient
+            and quick access to useful
+            digital documents and printable
+            files through an easy-to-use
+            online platform.
+          </p>
+        </div>
+
+        {/* OUR SERVICES */}
+
+        <div
+          style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '14px',
+            marginBottom: '20px',
+            boxShadow:
+              '0 3px 12px rgba(0,0,0,0.07)',
+          }}
+        >
+          <h2
+            style={{
+              margin: '0 0 12px',
+              color: '#222',
+            }}
+          >
+            Our Services & Products
+          </h2>
+
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: '22px',
+              color: '#555',
+              lineHeight: 1.9,
+            }}
+          >
+            <li>Digital PDF documents</li>
+
+            <li>Printable document files</li>
+
+            <li>
+              Ready-to-use document
+              formats and templates
+            </li>
+
+            <li>
+              Application and form-related
+              digital files
+            </li>
+
+            <li>
+              Educational and reference
+              PDF materials
+            </li>
+
+            <li>
+              Other digital document files
+              available on our website
+            </li>
+          </ul>
+        </div>
+
+        {/* HOW IT WORKS */}
+
+        <div
+          style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '14px',
+            marginBottom: '20px',
+            boxShadow:
+              '0 3px 12px rgba(0,0,0,0.07)',
+          }}
+        >
+          <h2
+            style={{
+              margin: '0 0 12px',
+              color: '#222',
+            }}
+          >
+            How It Works
+          </h2>
+
+          <ol
+            style={{
+              margin: 0,
+              paddingLeft: '22px',
+              color: '#555',
+              lineHeight: 1.9,
+            }}
+          >
+            <li>
+              Browse the available
+              digital products.
+            </li>
+
+            <li>
+              Select the required PDF
+              or digital file.
+            </li>
+
+            <li>
+              Proceed to online payment.
+            </li>
+
+            <li>
+              Complete the payment using
+              the available payment methods.
+            </li>
+
+            <li>
+              After successful payment,
+              download the purchased
+              digital file.
+            </li>
+          </ol>
+
+          <p
+            style={{
+              margin:
+                '12px 0 0',
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            Digital products are delivered
+            electronically. No physical
+            product is shipped.
           </p>
         </div>
 
@@ -668,6 +848,151 @@ export default function Home() {
           </div>
         )}
 
+        {/* PAYMENT & DELIVERY */}
+
+        <div
+          style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '14px',
+            marginTop: '20px',
+            boxShadow:
+              '0 3px 12px rgba(0,0,0,0.07)',
+          }}
+        >
+          <h2
+            style={{
+              margin: '0 0 10px',
+              color: '#222',
+            }}
+          >
+            Payment & Digital Delivery
+          </h2>
+
+          <p
+            style={{
+              margin: '0 0 10px',
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            We accept online payments
+            through the payment methods
+            available at checkout.
+          </p>
+
+          <p
+            style={{
+              margin: '0 0 10px',
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            All prices displayed on the
+            website are in Indian Rupees
+            (INR).
+          </p>
+
+          <p
+            style={{
+              margin: 0,
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            After successful payment, the
+            purchased digital PDF/file is
+            delivered electronically and
+            can be downloaded by the
+            customer. No physical product
+            will be shipped.
+          </p>
+        </div>
+
+        {/* CONTACT US */}
+
+        <div
+          style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '14px',
+            marginTop: '20px',
+            boxShadow:
+              '0 3px 12px rgba(0,0,0,0.07)',
+          }}
+        >
+          <h2
+            style={{
+              margin: '0 0 10px',
+              color: '#222',
+            }}
+          >
+            Contact Us
+          </h2>
+
+          <p
+            style={{
+              margin: '0 0 10px',
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            For any questions, payment-related
+            issues, or assistance with our
+            digital products, please contact us.
+          </p>
+
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
+            <strong>Business Name:</strong>{' '}
+            SR E-Print Online
+          </p>
+
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
+            <strong>Contact Person:</strong>{' '}
+            Gs Raju
+          </p>
+
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
+            <strong>Email:</strong>{' '}
+            sronline99890@gmail.com
+          </p>
+
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
+            <strong>Phone / WhatsApp:</strong>{' '}
+            9989057683
+          </p>
+
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
+            <strong>Business Hours:</strong>{' '}
+            Monday to Saturday, 9:00 AM to 6:00 PM
+          </p>
+        </div>
+
         {/* FOOTER */}
 
         <div
@@ -682,7 +1007,14 @@ export default function Home() {
               '13px',
           }}
         >
-          Secure payment powered by Razorpay
+          <p>
+            Secure payment powered by Razorpay
+          </p>
+
+          <p>
+            © 2026 SR E-Print Online.
+            All rights reserved.
+          </p>
         </div>
 
       </section>
