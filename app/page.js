@@ -932,6 +932,22 @@ export default function Home() {
           }}
         >
           <p>
+          <div
+  style={{
+    marginBottom: '12px',
+  }}
+>
+  <a
+    href="/privacy"
+    style={{
+      color: '#1565c0',
+      textDecoration: 'none',
+      fontWeight: 'bold',
+    }}
+  >
+    Privacy Policy
+  </a>
+</div>
             Secure payment powered by Razorpay
           </p>
 
