@@ -12,11 +12,10 @@ export default function PrivacyPolicy() {
         style={{
           maxWidth: '800px',
           margin: '0 auto',
-          background: 'white',
+          background: '#ffffff',
           padding: '25px',
           borderRadius: '14px',
-          boxShadow:
-            '0 3px 12px rgba(0,0,0,0.07)',
+          boxShadow: '0 3px 12px rgba(0,0,0,0.07)',
         }}
       >
         <h1
@@ -28,27 +27,20 @@ export default function PrivacyPolicy() {
           Privacy Policy
         </h1>
 
-        <p
-          style={{
-            color: '#666',
-            lineHeight: 1.7,
-          }}
-        >
+        <p style={{ color: '#666' }}>
           Last updated: August 31, 2026
         </p>
 
         <h2>1. Introduction</h2>
-
         <p>
           SR E-Print Online respects your
           privacy and is committed to
-          protecting the information
-          provided by customers while using
-          our website and digital services.
+          protecting customer information
+          while using our website and
+          digital services.
         </p>
 
         <h2>2. Information We Collect</h2>
-
         <p>
           We may receive information that
           customers provide during payment
@@ -57,41 +49,37 @@ export default function PrivacyPolicy() {
         </p>
 
         <p>
-          Payment processing is handled
-          through our payment gateway.
           We do not store customers'
-          card, UPI, or banking passwords
-          on our website.
+          card details, UPI PINs, banking
+          passwords, or other confidential
+          payment credentials on our website.
         </p>
 
         <h2>3. Payment Information</h2>
-
         <p>
           Online payments are processed
-          securely through Razorpay and its
-          supported payment methods.
+          through Razorpay and its supported
+          payment methods.
         </p>
 
         <p>
           Payment information is handled
           according to the payment
-          provider's security and privacy
-          policies.
+          provider's applicable security
+          and privacy practices.
         </p>
 
         <h2>4. Digital Products</h2>
-
         <p>
           Our website provides digital PDF
           and document files. After
           successful payment verification,
-          the purchased digital file may be
-          provided electronically for
+          the purchased digital file is
+          delivered electronically for
           download.
         </p>
 
         <h2>5. Use of Information</h2>
-
         <p>
           Information may be used to
           process payments, provide
@@ -101,23 +89,21 @@ export default function PrivacyPolicy() {
         </p>
 
         <h2>6. Data Security</h2>
-
         <p>
           We take reasonable measures to
           protect information submitted
-          through our website. However, no
-          internet-based service can
+          through our website. However,
+          no internet-based service can
           guarantee absolute security.
         </p>
 
         <h2>7. Third-Party Services</h2>
-
         <p>
-          Our website may use third-party
+          Our website uses third-party
           services such as Razorpay for
           payment processing. These
           services may process information
-          according to their own privacy
+          according to their own applicable
           policies.
         </p>
 
@@ -131,47 +117,43 @@ export default function PrivacyPolicy() {
         </p>
 
         <p>
-          <strong>
-            Business Name:
-          </strong>{' '}
+          <strong>Business Name:</strong>{' '}
           SR E-Print Online
         </p>
 
         <p>
-          <strong>
-            Contact Person:
-          </strong>{' '}
+          <strong>Contact Person:</strong>{' '}
           Gs Raju
         </p>
 
         <p>
-          <strong>
-            Email:
-          </strong>{' '}
+          <strong>Email:</strong>{' '}
           sronline99890@gmail.com
         </p>
 
         <p>
-          <strong>
-            Phone / WhatsApp:
-          </strong>{' '}
+          <strong>Phone / WhatsApp:</strong>{' '}
           9989057683
+        </p>
+
+        <p>
+          <strong>Business Hours:</strong>{' '}
+          Monday to Saturday, 9:00 AM to 6:00 PM
         </p>
 
         <div
           style={{
-            marginTop: '25px',
+            marginTop: '30px',
             paddingTop: '20px',
-            borderTop:
-              '1px solid #ddd',
+            borderTop: '1px solid #ddd',
           }}
         >
           <a
             href="/"
             style={{
               color: '#1565c0',
-              fontWeight: 'bold',
               textDecoration: 'none',
+              fontWeight: 'bold',
             }}
           >
             ← Back to Home
