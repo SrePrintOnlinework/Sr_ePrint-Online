@@ -45,38 +45,59 @@ export default function Home() {
 
     try {
       // Load Razorpay
-      const isLoaded = await loadRazorpayScript();
+      const razorpayLoaded =
+        await loadRazorpayScript();
 
-      if (!isLoaded) {
-        throw new Error('Razorpay SDK failed to load.');
-      }
-
-      // Create Order
-      const orderRes = await fetch('/api/create-order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pdfId: selectedPdf.id,
-        }),
-      });
-
-      const orderData = await orderRes.json();
-
-      if (!orderRes.ok) {
+      if (!razorpayLoaded) {
         throw new Error(
-          orderData.error || 'Failed to create payment order'
+          'Razorpay SDK failed to load.'
         );
       }
 
-      if (!orderData.orderId) {
-        throw new Error('Order ID not received');
+      // --------------------------------
+      // CREATE ORDER
+      // --------------------------------
+
+      const orderRes = await fetch(
+        '/api/create-order',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify({
+            pdfId: selectedPdf.id,
+          }),
+        }
+      );
+
+      // Try to read JSON
+      const orderData =
+        await orderRes.json();
+
+      if (!orderRes.ok) {
+        throw new Error(
+          orderData?.error ||
+          'Failed to create payment order'
+        );
       }
 
-      // Razorpay Key
+      if (!orderData?.orderId) {
+        throw new Error(
+          'Razorpay Order ID not received'
+        );
+      }
+
+      // --------------------------------
+      // RAZORPAY KEY
+      // --------------------------------
+
       const razorpayKey =
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        process.env
+          .NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
       if (!razorpayKey) {
         throw new Error(
@@ -84,96 +105,152 @@ export default function Home() {
         );
       }
 
-      // Razorpay Options
+      // --------------------------------
+      // RAZORPAY OPTIONS
+      // --------------------------------
+
       const options = {
         key: razorpayKey,
 
-        amount: orderData.amount || 9900,
+        amount:
+          orderData.amount || 9900,
 
-        currency: 'INR',
+        currency:
+          orderData.currency || 'INR',
 
-        name: 'SR INTERNET Online Centre',
+        name:
+          'SR INTERNET Online Centre',
 
-        description: `Digital PDF - ${selectedPdf.name}`,
+        description:
+          `Digital PDF - ${selectedPdf.name}`,
 
-        order_id: orderData.orderId,
+        order_id:
+          orderData.orderId,
 
-        handler: async function (response) {
-          try {
-            // Verify Payment
-            const verifyRes = await fetch(
-              '/api/verify-payment',
-              {
-                method: 'POST',
+        handler:
+          async function (response) {
+            try {
+              // --------------------------------
+              // VERIFY PAYMENT
+              // --------------------------------
 
-                headers: {
-                  'Content-Type': 'application/json',
-                },
+              const verifyRes =
+                await fetch(
+                  '/api/verify-payment',
+                  {
+                    method: 'POST',
 
-                body: JSON.stringify({
-                  razorpay_order_id:
-                    response.razorpay_order_id,
+                    headers: {
+                      'Content-Type':
+                        'application/json',
+                    },
 
-                  razorpay_payment_id:
-                    response.razorpay_payment_id,
+                    body: JSON.stringify({
+                      razorpay_order_id:
+                        response.razorpay_order_id,
 
-                  razorpay_signature:
-                    response.razorpay_signature,
+                      razorpay_payment_id:
+                        response.razorpay_payment_id,
 
-                  pdfId: selectedPdf.id,
-                }),
+                      razorpay_signature:
+                        response.razorpay_signature,
+
+                      pdfId:
+                        selectedPdf.id,
+                    }),
+                  }
+                );
+
+              // --------------------------------
+              // CHECK RESPONSE
+              // --------------------------------
+
+              if (!verifyRes.ok) {
+                let errorMessage =
+                  'Payment verification failed';
+
+                try {
+                  const errorData =
+                    await verifyRes.json();
+
+                  errorMessage =
+                    errorData?.error ||
+                    errorMessage;
+                } catch {
+                  // Response was not JSON
+                }
+
+                throw new Error(
+                  errorMessage
+                );
               }
-            );
 
-            if (!verifyRes.ok) {
-              const errorData =
-                await verifyRes.json().catch(() => ({}));
+              // --------------------------------
+              // GET PDF
+              // --------------------------------
 
-              throw new Error(
-                errorData.error ||
-                  'Payment verification failed'
+              const blob =
+                await verifyRes.blob();
+
+              if (
+                !blob ||
+                blob.size === 0
+              ) {
+                throw new Error(
+                  'PDF file is empty'
+                );
+              }
+
+              // --------------------------------
+              // DOWNLOAD PDF
+              // --------------------------------
+
+              const url =
+                window.URL.createObjectURL(
+                  blob
+                );
+
+              const link =
+                document.createElement(
+                  'a'
+                );
+
+              link.href = url;
+
+              link.download =
+                selectedPdf.file;
+
+              document.body.appendChild(
+                link
+              );
+
+              link.click();
+
+              link.remove();
+
+              window.URL.revokeObjectURL(
+                url
+              );
+
+              alert(
+                '✅ Payment Successful! PDF downloaded.'
+              );
+
+            } catch (error) {
+              console.error(
+                'Payment verification/download error:',
+                error
+              );
+
+              alert(
+                'Payment was received, but PDF download failed. Please contact support.'
               );
             }
+          },
 
-            // Get PDF
-            const blob = await verifyRes.blob();
-
-            if (!blob || blob.size === 0) {
-              throw new Error('PDF file is empty');
-            }
-
-            // Download PDF
-            const url =
-              window.URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-
-            a.href = url;
-
-            a.download = selectedPdf.file;
-
-            document.body.appendChild(a);
-
-            a.click();
-
-            a.remove();
-
-            window.URL.revokeObjectURL(url);
-
-            alert(
-              '✅ Payment Successful! PDF downloaded.'
-            );
-          } catch (error) {
-            console.error(
-              'Verification / Download Error:',
-              error
-            );
-
-            alert(
-              'Payment was received, but PDF verification/download failed. Please contact support.'
-            );
-          }
-        },
+        // --------------------------------
+        // CUSTOMER DETAILS
+        // --------------------------------
 
         prefill: {
           name: '',
@@ -181,20 +258,29 @@ export default function Home() {
           contact: '',
         },
 
+        // --------------------------------
+        // THEME
+        // --------------------------------
+
         theme: {
           color: '#1565c0',
         },
       };
 
-      // Open Razorpay
+      // --------------------------------
+      // OPEN RAZORPAY
+      // --------------------------------
+
       const razorpay =
-        new window.Razorpay(options);
+        new window.Razorpay(
+          options
+        );
 
       razorpay.on(
         'payment.failed',
         function (response) {
           console.error(
-            'Razorpay Payment Failed:',
+            'Razorpay payment failed:',
             response?.error
           );
 
@@ -205,30 +291,38 @@ export default function Home() {
       );
 
       razorpay.open();
+
     } catch (error) {
-      console.error('Payment Error:', error);
+      console.error(
+        'Payment error:',
+        error
+      );
 
       alert(
         'Something went wrong: ' +
-          error.message
+        error.message
       );
+
     } finally {
       setLoading(false);
     }
   };
 
   // ------------------------------------
-  // Search
+  // SEARCH PDF
   // ------------------------------------
 
-  const filteredPdfs = pdfs.filter((pdf) =>
-    pdf.name
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  const filteredPdfs =
+    pdfs.filter((pdf) =>
+      pdf.name
+        .toLowerCase()
+        .includes(
+          search.toLowerCase()
+        )
+    );
 
   // ------------------------------------
-  // Page
+  // PAGE
   // ------------------------------------
 
   return (
@@ -236,7 +330,8 @@ export default function Home() {
       style={{
         minHeight: '100vh',
         background: '#f4f7fb',
-        fontFamily: 'Arial, sans-serif',
+        fontFamily:
+          'Arial, sans-serif',
       }}
     >
 
@@ -256,7 +351,11 @@ export default function Home() {
             margin: 'auto',
           }}
         >
-          <div style={{ fontSize: '42px' }}>
+          <div
+            style={{
+              fontSize: '42px',
+            }}
+          >
             📄
           </div>
 
@@ -287,7 +386,8 @@ export default function Home() {
         style={{
           maxWidth: '800px',
           margin: '0 auto',
-          padding: '25px 15px 40px',
+          padding:
+            '25px 15px 40px',
         }}
       >
 
@@ -341,7 +441,8 @@ export default function Home() {
             boxSizing: 'border-box',
             padding: '15px',
             fontSize: '16px',
-            border: '1px solid #d5dbe3',
+            border:
+              '1px solid #d5dbe3',
             borderRadius: '12px',
             outline: 'none',
             marginBottom: '15px',
@@ -361,6 +462,7 @@ export default function Home() {
             marginBottom: '20px',
           }}
         >
+
           <h3
             style={{
               padding: '8px 10px',
@@ -382,76 +484,93 @@ export default function Home() {
               No PDF found.
             </p>
           ) : (
-            filteredPdfs.map((pdf) => (
-              <div
-                key={pdf.id}
-                onClick={() =>
-                  setSelectedPdf(pdf)
-                }
-                style={{
-                  border:
-                    selectedPdf?.id === pdf.id
-                      ? '2px solid #1565c0'
-                      : '1px solid #e1e5eb',
-
-                  borderRadius: '12px',
-                  padding: '15px',
-                  marginBottom: '10px',
-                  cursor: 'pointer',
-
-                  background:
-                    selectedPdf?.id === pdf.id
-                      ? '#eef6ff'
-                      : 'white',
-
-                  transition: '0.2s',
-                }}
-              >
+            filteredPdfs.map(
+              (pdf) => (
                 <div
+                  key={pdf.id}
+                  onClick={() =>
+                    setSelectedPdf(pdf)
+                  }
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
+                    border:
+                      selectedPdf?.id ===
+                      pdf.id
+                        ? '2px solid #1565c0'
+                        : '1px solid #e1e5eb',
+
+                    borderRadius: '12px',
+                    padding: '15px',
+                    marginBottom: '10px',
+                    cursor: 'pointer',
+
+                    background:
+                      selectedPdf?.id ===
+                      pdf.id
+                        ? '#eef6ff'
+                        : 'white',
+
+                    transition: '0.2s',
                   }}
                 >
-                  <div style={{ fontSize: '32px' }}>
-                    📄
-                  </div>
-
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        fontWeight: 'bold',
-                        color: '#222',
-                        fontSize: '16px',
-                      }}
-                    >
-                      {pdf.name}
-                    </div>
-
-                    <div
-                      style={{
-                        color: '#777',
-                        fontSize: '13px',
-                        marginTop: '4px',
-                      }}
-                    >
-                      PDF Document
-                    </div>
-                  </div>
 
                   <div
                     style={{
-                      fontWeight: 'bold',
-                      color: '#1565c0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
                     }}
                   >
-                    ₹99
+
+                    <div
+                      style={{
+                        fontSize: '32px',
+                      }}
+                    >
+                      📄
+                    </div>
+
+                    <div
+                      style={{
+                        flex: 1,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 'bold',
+                          color: '#222',
+                          fontSize: '16px',
+                        }}
+                      >
+                        {pdf.name}
+                      </div>
+
+                      <div
+                        style={{
+                          color: '#777',
+                          fontSize: '13px',
+                          marginTop: '4px',
+                        }}
+                      >
+                        PDF Document
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        color: '#1565c0',
+                      }}
+                    >
+                      ₹99
+                    </div>
+
                   </div>
+
                 </div>
-              </div>
-            ))
+              )
+            )
           )}
+
         </div>
 
         {/* SELECTED PDF */}
@@ -469,6 +588,7 @@ export default function Home() {
                 '0 3px 12px rgba(0,0,0,0.07)',
             }}
           >
+
             <div
               style={{
                 color: '#555',
@@ -526,6 +646,7 @@ export default function Home() {
                 ? 'Please wait...'
                 : '💳 Pay ₹99 & Download PDF'}
             </button>
+
           </div>
         )}
 
@@ -594,7 +715,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* OUR SERVICES */}
+        {/* SERVICES */}
 
         <div
           style={{
@@ -624,7 +745,6 @@ export default function Home() {
             }}
           >
             <li>Digital PDF documents</li>
-
             <li>Printable document files</li>
 
             <li>
@@ -778,7 +898,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* CONTACT US */}
+        {/* CONTACT */}
 
         <div
           style={{
@@ -872,7 +992,11 @@ export default function Home() {
             fontSize: '13px',
           }}
         >
-          <p style={{ marginBottom: '10px' }}>
+          <p
+            style={{
+              marginBottom: '10px',
+            }}
+          >
             <a
               href="/privacy"
               style={{
