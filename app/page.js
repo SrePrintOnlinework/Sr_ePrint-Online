@@ -933,10 +933,8 @@ export default function Home() {
         >
           <p>
           <div
-  style={{
-    marginBottom: '12px',
-  }}
->
+
+  <p style={{ marginBottom: '10px' }}>
   <a
     href="/privacy"
     style={{
@@ -947,7 +945,7 @@ export default function Home() {
   >
     Privacy Policy
   </a>
-</div>
+</p>
             Secure payment powered by Razorpay
           </p>
 
