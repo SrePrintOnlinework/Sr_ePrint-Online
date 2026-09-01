@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { pdfs } from './pdfs';
 
 export default function Home() {
@@ -8,6 +8,10 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Prevent duplicate payment/download
+  const paymentStartedRef = useRef(false);
+  const downloadStartedRef = useRef(false);
 
   // ------------------------------------
   // LOAD RAZORPAY
@@ -26,7 +30,6 @@ export default function Home() {
         'https://checkout.razorpay.com/v1/checkout.js';
 
       script.onload = () => resolve(true);
-
       script.onerror = () => resolve(false);
 
       document.body.appendChild(script);
@@ -42,6 +45,14 @@ export default function Home() {
       alert('Please select a PDF first.');
       return;
     }
+
+    // Prevent double click
+    if (paymentStartedRef.current) {
+      return;
+    }
+
+    paymentStartedRef.current = true;
+    downloadStartedRef.current = false;
 
     setLoading(true);
     setSuccessMessage('');
@@ -68,12 +79,9 @@ export default function Home() {
         '/create-order',
         {
           method: 'POST',
-
           headers: {
-            'Content-Type':
-              'application/json',
+            'Content-Type': 'application/json',
           },
-
           body: JSON.stringify({
             pdfId: selectedPdf.id,
           }),
@@ -87,8 +95,7 @@ export default function Home() {
       let orderData;
 
       try {
-        orderData =
-          await orderRes.json();
+        orderData = await orderRes.json();
       } catch {
         throw new Error(
           'Server returned an invalid response. Please try again.'
@@ -113,8 +120,7 @@ export default function Home() {
       // --------------------------------
 
       const razorpayKey =
-        process.env
-          .NEXT_PUBLIC_RAZORPAY_KEY_ID;
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
       if (!razorpayKey) {
         throw new Error(
@@ -148,142 +154,200 @@ export default function Home() {
         // PAYMENT SUCCESS
         // --------------------------------
 
-        handler:
-          async function (response) {
-            try {
-              // --------------------------------
-              // VERIFY PAYMENT
-              // --------------------------------
+        handler: async function (response) {
+          try {
+            // --------------------------------
+            // DUPLICATE HANDLER PROTECTION
+            // --------------------------------
 
-              const verifyRes =
-                await fetch(
-                  '/verify-payment',
-                  {
-                    method: 'POST',
+            if (downloadStartedRef.current) {
+              return;
+            }
 
-                    headers: {
-                      'Content-Type':
-                        'application/json',
-                    },
+            // --------------------------------
+            // VERIFY PAYMENT
+            // --------------------------------
 
-                    body: JSON.stringify({
-                      razorpay_order_id:
-                        response.razorpay_order_id,
+            const verifyRes =
+              await fetch(
+                '/verify-payment',
+                {
+                  method: 'POST',
 
-                      razorpay_payment_id:
-                        response.razorpay_payment_id,
+                  headers: {
+                    'Content-Type':
+                      'application/json',
+                  },
 
-                      razorpay_signature:
-                        response.razorpay_signature,
+                  body: JSON.stringify({
+                    razorpay_order_id:
+                      response.razorpay_order_id,
 
-                      pdfId:
-                        selectedPdf.id,
-                    }),
-                  }
-                );
+                    razorpay_payment_id:
+                      response.razorpay_payment_id,
 
-              // --------------------------------
-              // CHECK VERIFICATION
-              // --------------------------------
+                    razorpay_signature:
+                      response.razorpay_signature,
 
-              if (!verifyRes.ok) {
-                let errorMessage =
-                  'Payment verification failed';
-
-                try {
-                  const errorData =
-                    await verifyRes.json();
-
-                  errorMessage =
-                    errorData?.error ||
-                    errorMessage;
-                } catch {
-                  errorMessage =
-                    'Payment verification failed.';
+                    pdfId:
+                      selectedPdf.id,
+                  }),
                 }
+              );
 
-                throw new Error(
-                  errorMessage
-                );
+            // --------------------------------
+            // CHECK VERIFICATION
+            // --------------------------------
+
+            if (!verifyRes.ok) {
+              let errorMessage =
+                'Payment verification failed';
+
+              try {
+                const errorData =
+                  await verifyRes.json();
+
+                errorMessage =
+                  errorData?.error ||
+                  errorMessage;
+              } catch {
+                errorMessage =
+                  'Payment verification failed.';
               }
 
-              // --------------------------------
-              // GET PDF
-              // --------------------------------
-
-              const blob =
-                await verifyRes.blob();
-
-              if (
-                !blob ||
-                blob.size === 0
-              ) {
-                throw new Error(
-                  'PDF file is empty'
-                );
-              }
-
-              // --------------------------------
-              // AUTOMATIC PDF DOWNLOAD
-              // --------------------------------
-
-              const url =
-                window.URL.createObjectURL(
-                  blob
-                );
-
-              const link =
-                document.createElement(
-                  'a'
-                );
-
-              link.href = url;
-
-              link.download =
-                selectedPdf.file;
-
-              link.style.display =
-                'none';
-
-              document.body.appendChild(
-                link
-              );
-
-              link.click();
-
-              document.body.removeChild(
-                link
-              );
-
-              // --------------------------------
-              // CLEAN URL AFTER DOWNLOAD STARTS
-              // --------------------------------
-
-              setTimeout(() => {
-                window.URL.revokeObjectURL(
-                  url
-                );
-              }, 2000);
-
-              // --------------------------------
-              // SUCCESS MESSAGE
-              // --------------------------------
-
-              setSuccessMessage(
-                '✅ Payment Successful! Your PDF download has started.'
-              );
-
-            } catch (error) {
-              console.error(
-                'Payment verification/download error:',
-                error
-              );
-
-              alert(
-                'Payment was received, but PDF download failed. Please contact support.'
+              throw new Error(
+                errorMessage
               );
             }
-          },
+
+            // --------------------------------
+            // GET PDF
+            // --------------------------------
+
+            const blob =
+              await verifyRes.blob();
+
+            if (
+              !blob ||
+              blob.size === 0
+            ) {
+              throw new Error(
+                'PDF file is empty'
+              );
+            }
+
+            // --------------------------------
+            // MARK DOWNLOAD STARTED
+            // --------------------------------
+
+            downloadStartedRef.current = true;
+
+            // --------------------------------
+            // CREATE BLOB URL
+            // --------------------------------
+
+            const url =
+              window.URL.createObjectURL(
+                blob
+              );
+
+            // --------------------------------
+            // CREATE UNIQUE FILE NAME
+            // --------------------------------
+
+            const originalName =
+              selectedPdf.file;
+
+            const dotIndex =
+              originalName.lastIndexOf('.');
+
+            let baseName =
+              originalName;
+
+            let extension =
+              '.pdf';
+
+            if (dotIndex > 0) {
+              baseName =
+                originalName.substring(
+                  0,
+                  dotIndex
+                );
+
+              extension =
+                originalName.substring(
+                  dotIndex
+                );
+            }
+
+            const paymentId =
+              response.razorpay_payment_id;
+
+            const uniqueFileName =
+              `${baseName}-payment-${paymentId}${extension}`;
+
+            // --------------------------------
+            // DIRECT DOWNLOAD
+            // --------------------------------
+
+            const link =
+              document.createElement('a');
+
+            link.href = url;
+
+            link.download =
+              uniqueFileName;
+
+            link.style.display =
+              'none';
+
+            document.body.appendChild(
+              link
+            );
+
+            link.click();
+
+            // Remove link
+            document.body.removeChild(
+              link
+            );
+
+            // --------------------------------
+            // CLEAN BLOB URL
+            // --------------------------------
+
+            setTimeout(() => {
+              window.URL.revokeObjectURL(
+                url
+              );
+            }, 5000);
+
+            // --------------------------------
+            // SUCCESS
+            // --------------------------------
+
+            setSuccessMessage(
+              '✅ Payment Successful! Your PDF download has started.'
+            );
+
+          } catch (error) {
+            console.error(
+              'Payment verification/download error:',
+              error
+            );
+
+            downloadStartedRef.current =
+              false;
+
+            alert(
+              'Payment was received, but PDF download failed. Please contact support.'
+            );
+          } finally {
+            setLoading(false);
+            paymentStartedRef.current =
+              false;
+          }
+        },
 
         // --------------------------------
         // CUSTOMER DETAILS
@@ -301,6 +365,18 @@ export default function Home() {
 
         theme: {
           color: '#1565c0',
+        },
+
+        // --------------------------------
+        // MODAL CLOSED
+        // --------------------------------
+
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+            paymentStartedRef.current =
+              false;
+          },
         },
       };
 
@@ -325,6 +401,14 @@ export default function Home() {
             response?.error
           );
 
+          setLoading(false);
+
+          paymentStartedRef.current =
+            false;
+
+          downloadStartedRef.current =
+            false;
+
           alert(
             '❌ Payment failed. Please try again.'
           );
@@ -339,13 +423,18 @@ export default function Home() {
         error
       );
 
+      setLoading(false);
+
+      paymentStartedRef.current =
+        false;
+
+      downloadStartedRef.current =
+        false;
+
       alert(
         'Something went wrong: ' +
         error.message
       );
-
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -376,9 +465,7 @@ export default function Home() {
       }}
     >
 
-      {/* --------------------------------
-          HEADER
-      -------------------------------- */}
+      {/* HEADER */}
 
       <header
         style={{
@@ -425,9 +512,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* --------------------------------
-          MAIN
-      -------------------------------- */}
+      {/* MAIN */}
 
       <section
         style={{
@@ -438,9 +523,7 @@ export default function Home() {
         }}
       >
 
-        {/* --------------------------------
-            SUCCESS MESSAGE
-        -------------------------------- */}
+        {/* SUCCESS MESSAGE */}
 
         {successMessage && (
           <div
@@ -461,9 +544,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* --------------------------------
-            INTRO
-        -------------------------------- */}
+        {/* INTRO */}
 
         <div
           style={{
@@ -501,9 +582,7 @@ export default function Home() {
 
         </div>
 
-        {/* --------------------------------
-            SEARCH
-        -------------------------------- */}
+        {/* SEARCH */}
 
         <input
           type="text"
@@ -526,9 +605,7 @@ export default function Home() {
           }}
         />
 
-        {/* --------------------------------
-            PDF LIST
-        -------------------------------- */}
+        {/* PDF LIST */}
 
         <div
           style={{
@@ -571,6 +648,8 @@ export default function Home() {
                 <div
                   key={pdf.id}
                   onClick={() => {
+                    if (loading) return;
+
                     setSelectedPdf(pdf);
                     setSuccessMessage('');
                   }}
@@ -584,7 +663,10 @@ export default function Home() {
                     borderRadius: '12px',
                     padding: '15px',
                     marginBottom: '10px',
-                    cursor: 'pointer',
+                    cursor:
+                      loading
+                        ? 'not-allowed'
+                        : 'pointer',
 
                     background:
                       selectedPdf?.id ===
@@ -660,9 +742,7 @@ export default function Home() {
 
         </div>
 
-        {/* --------------------------------
-            SELECTED PDF
-        -------------------------------- */}
+        {/* SELECTED PDF */}
 
         {selectedPdf && (
 
@@ -730,10 +810,13 @@ export default function Home() {
                   loading
                     ? 'not-allowed'
                     : 'pointer',
+
+                opacity:
+                  loading ? 0.8 : 1,
               }}
             >
               {loading
-                ? 'Please wait...'
+                ? '⏳ Processing Payment...'
                 : '💳 Pay ₹99 & Download PDF'}
             </button>
 
@@ -741,9 +824,7 @@ export default function Home() {
 
         )}
 
-        {/* --------------------------------
-            ABOUT US
-        -------------------------------- */}
+        {/* ABOUT US */}
 
         <div
           style={{
@@ -810,9 +891,7 @@ export default function Home() {
 
         </div>
 
-        {/* --------------------------------
-            SERVICES
-        -------------------------------- */}
+        {/* SERVICES */}
 
         <div
           style={{
@@ -875,9 +954,7 @@ export default function Home() {
 
         </div>
 
-        {/* --------------------------------
-            HOW IT WORKS
-        -------------------------------- */}
+        {/* HOW IT WORKS */}
 
         <div
           style={{
@@ -949,9 +1026,7 @@ export default function Home() {
 
         </div>
 
-        {/* --------------------------------
-            PAYMENT & DELIVERY
-        -------------------------------- */}
+        {/* PAYMENT & DELIVERY */}
 
         <div
           style={{
@@ -1014,9 +1089,7 @@ export default function Home() {
 
         </div>
 
-        {/* --------------------------------
-            CONTACT
-        -------------------------------- */}
+        {/* CONTACT */}
 
         <div
           style={{
@@ -1112,9 +1185,7 @@ export default function Home() {
 
         </div>
 
-        {/* --------------------------------
-            FOOTER
-        -------------------------------- */}
+        {/* FOOTER */}
 
         <div
           style={{
