@@ -654,7 +654,7 @@ export default function Home() {
                 setSearch(e.target.value)
               }
               style={{
-                width: '100%',
+                width: '50%',
                 boxSizing: 'border-box',
                 padding:
                   '15px 15px 15px 47px',
@@ -700,7 +700,7 @@ export default function Home() {
 
         <div
           style={{
-            background: 'white',
+            background: 'red',
             borderRadius: '14px',
             padding: '10px',
             boxShadow:
