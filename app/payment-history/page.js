@@ -10,10 +10,7 @@ export default function PaymentHistoryPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ------------------------------------
-  // Load Payment History
-  // ------------------------------------
-
+  // Check login and load payments
   const loadPayments = async () => {
     try {
       setLoading(true);
@@ -37,31 +34,23 @@ export default function PaymentHistoryPage() {
 
       if (!response.ok) {
         throw new Error(
-          data?.error ||
-            'Failed to load payment history'
+          data?.error || 'Unable to load payments'
         );
       }
 
       setPayments(data.payments || []);
       setLoggedIn(true);
-
-    } catch (error) {
-      console.error(error);
-
+    } catch (err) {
+      console.error(err);
       setError(
-        error?.message ||
-          'Unable to load payment history'
+        err?.message || 'Something went wrong'
       );
-
     } finally {
       setLoading(false);
     }
   };
 
-  // ------------------------------------
   // Login
-  // ------------------------------------
-
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -78,12 +67,9 @@ export default function PaymentHistoryPage() {
         '/api/payment-history',
         {
           method: 'POST',
-
           headers: {
-            'Content-Type':
-              'application/json',
+            'Content-Type': 'application/json',
           },
-
           body: JSON.stringify({
             password: password,
           }),
@@ -94,33 +80,23 @@ export default function PaymentHistoryPage() {
 
       if (!response.ok) {
         throw new Error(
-          data?.error ||
-            'Invalid password'
+          data?.error || 'Invalid password'
         );
       }
 
       setPassword('');
-      setLoggedIn(true);
-
       await loadPayments();
-
-    } catch (error) {
-      console.error(error);
-
+    } catch (err) {
+      console.error(err);
       setError(
-        error?.message ||
-          'Login failed'
+        err?.message || 'Login failed'
       );
-
     } finally {
       setLoginLoading(false);
     }
   };
 
-  // ------------------------------------
   // Logout
-  // ------------------------------------
-
   const handleLogout = async () => {
     try {
       await fetch(
@@ -133,43 +109,31 @@ export default function PaymentHistoryPage() {
       setLoggedIn(false);
       setPayments([]);
       setError('');
-
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // ------------------------------------
-  // Check login when page opens
-  // ------------------------------------
+  // Date format
+  const formatDate = (timestamp) => {
+    if (!timestamp) {
+      return '-';
+    }
+
+    return new Date(
+      timestamp * 1000
+    ).toLocaleString('en-IN', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  };
 
   useEffect(() => {
     loadPayments();
   }, []);
 
   // ------------------------------------
-  // Format Date
-  // ------------------------------------
-
-  const formatDate = (timestamp) => {
-    if (!timestamp) {
-      return '-';
-    }
-
-    try {
-      return new Date(
-        timestamp * 1000
-      ).toLocaleString('en-IN', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      });
-    } catch {
-      return '-';
-    }
-  };
-
-  // ------------------------------------
-  // LOGIN SCREEN
+  // LOGIN PAGE
   // ------------------------------------
 
   if (!loggedIn) {
@@ -177,30 +141,28 @@ export default function PaymentHistoryPage() {
       <main
         style={{
           minHeight: '100vh',
-          background: '#f5f7fb',
+          background: '#f3f4f6',
           display: 'flex',
-          justifyContent: 'center',
           alignItems: 'center',
+          justifyContent: 'center',
           padding: '20px',
-          boxSizing: 'border-box',
         }}
       >
         <div
           style={{
             width: '100%',
-            maxWidth: '420px',
+            maxWidth: '400px',
             background: '#ffffff',
             padding: '30px',
-            borderRadius: '16px',
+            borderRadius: '15px',
             boxShadow:
-              '0 8px 30px rgba(0,0,0,0.08)',
-            boxSizing: 'border-box',
+              '0 8px 25px rgba(0,0,0,0.08)',
           }}
         >
           <div
             style={{
               textAlign: 'center',
-              fontSize: '44px',
+              fontSize: '45px',
               marginBottom: '10px',
             }}
           >
@@ -211,7 +173,6 @@ export default function PaymentHistoryPage() {
             style={{
               textAlign: 'center',
               margin: '0 0 8px',
-              fontSize: '28px',
             }}
           >
             Payment History
@@ -230,22 +191,20 @@ export default function PaymentHistoryPage() {
           <form onSubmit={handleLogin}>
             <input
               type="password"
-              placeholder="Enter password"
               value={password}
+              placeholder="Enter password"
               onChange={(e) =>
                 setPassword(e.target.value)
               }
-              autoComplete="current-password"
               style={{
                 width: '100%',
                 padding: '14px',
-                borderRadius: '10px',
                 border:
                   '1px solid #d1d5db',
+                borderRadius: '10px',
                 fontSize: '16px',
-                marginBottom: '15px',
                 boxSizing: 'border-box',
-                outline: 'none',
+                marginBottom: '15px',
               }}
             />
 
@@ -257,17 +216,10 @@ export default function PaymentHistoryPage() {
                 padding: '14px',
                 border: 'none',
                 borderRadius: '10px',
-                background:
-                  loginLoading
-                    ? '#9ca3af'
-                    : '#111827',
+                background: '#111827',
                 color: '#ffffff',
                 fontSize: '16px',
                 fontWeight: 'bold',
-                cursor:
-                  loginLoading
-                    ? 'not-allowed'
-                    : 'pointer',
               }}
             >
               {loginLoading
@@ -281,9 +233,9 @@ export default function PaymentHistoryPage() {
               style={{
                 marginTop: '15px',
                 padding: '10px',
+                borderRadius: '8px',
                 background: '#fee2e2',
                 color: '#991b1b',
-                borderRadius: '8px',
                 textAlign: 'center',
               }}
             >
@@ -296,16 +248,15 @@ export default function PaymentHistoryPage() {
   }
 
   // ------------------------------------
-  // PAYMENT HISTORY SCREEN
+  // PAYMENT HISTORY PAGE
   // ------------------------------------
 
   return (
     <main
       style={{
         minHeight: '100vh',
-        background: '#f5f7fb',
+        background: '#f3f4f6',
         padding: '20px',
-        boxSizing: 'border-box',
       }}
     >
       <div
@@ -320,22 +271,19 @@ export default function PaymentHistoryPage() {
           style={{
             background: '#ffffff',
             padding: '20px',
-            borderRadius: '14px',
+            borderRadius: '15px',
             marginBottom: '20px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            gap: '10px',
             flexWrap: 'wrap',
-            boxShadow:
-              '0 4px 15px rgba(0,0,0,0.05)',
+            gap: '10px',
           }}
         >
           <div>
             <h1
               style={{
                 margin: 0,
-                fontSize: '26px',
               }}
             >
               💳 Payment History
@@ -343,7 +291,7 @@ export default function PaymentHistoryPage() {
 
             <p
               style={{
-                margin: '6px 0 0',
+                margin: '5px 0 0',
                 color: '#666',
               }}
             >
@@ -359,15 +307,13 @@ export default function PaymentHistoryPage() {
           >
             <button
               onClick={loadPayments}
-              disabled={loading}
               style={{
-                padding: '10px 16px',
+                padding: '10px 15px',
                 border: 'none',
                 borderRadius: '8px',
                 background: '#2563eb',
                 color: '#ffffff',
                 fontWeight: 'bold',
-                cursor: 'pointer',
               }}
             >
               🔄 Refresh
@@ -376,13 +322,12 @@ export default function PaymentHistoryPage() {
             <button
               onClick={handleLogout}
               style={{
-                padding: '10px 16px',
+                padding: '10px 15px',
                 border: 'none',
                 borderRadius: '8px',
                 background: '#dc2626',
                 color: '#ffffff',
                 fontWeight: 'bold',
-                cursor: 'pointer',
               }}
             >
               Logout
@@ -390,23 +335,20 @@ export default function PaymentHistoryPage() {
           </div>
         </div>
 
-        {/* Summary */}
+        {/* Total */}
 
         <div
           style={{
             background: '#ffffff',
             padding: '20px',
-            borderRadius: '14px',
+            borderRadius: '15px',
             marginBottom: '20px',
-            boxShadow:
-              '0 4px 15px rgba(0,0,0,0.05)',
           }}
         >
           <div
             style={{
-              fontSize: '14px',
               color: '#666',
-              marginBottom: '5px',
+              fontSize: '14px',
             }}
           >
             Total Payments
@@ -414,8 +356,9 @@ export default function PaymentHistoryPage() {
 
           <div
             style={{
-              fontSize: '28px',
+              fontSize: '30px',
               fontWeight: 'bold',
+              marginTop: '5px',
             }}
           >
             {payments.length}
@@ -429,8 +372,8 @@ export default function PaymentHistoryPage() {
             style={{
               background: '#ffffff',
               padding: '30px',
+              borderRadius: '15px',
               textAlign: 'center',
-              borderRadius: '14px',
             }}
           >
             Loading payments...
@@ -453,7 +396,7 @@ export default function PaymentHistoryPage() {
           </div>
         )}
 
-        {/* No Payments */}
+        {/* No payments */}
 
         {!loading &&
           payments.length === 0 && (
@@ -461,60 +404,56 @@ export default function PaymentHistoryPage() {
               style={{
                 background: '#ffffff',
                 padding: '30px',
+                borderRadius: '15px',
                 textAlign: 'center',
-                borderRadius: '14px',
               }}
             >
               <div
                 style={{
                   fontSize: '40px',
-                  marginBottom: '10px',
                 }}
               >
                 💳
               </div>
 
-              <strong>
-                No payments found
-              </strong>
+              <h3>
+                No Payments Found
+              </h3>
 
               <p
                 style={{
                   color: '#666',
                 }}
               >
-                Razorpay payment records
-                will appear here.
+                Razorpay payments will
+                appear here.
               </p>
             </div>
           )}
 
-        {/* Payment Table */}
+        {/* Payments Table */}
 
         {!loading &&
           payments.length > 0 && (
             <div
               style={{
                 background: '#ffffff',
-                borderRadius: '14px',
+                borderRadius: '15px',
                 overflowX: 'auto',
-                boxShadow:
-                  '0 4px 15px rgba(0,0,0,0.05)',
               }}
             >
               <table
                 style={{
                   width: '100%',
+                  minWidth: '900px',
                   borderCollapse:
                     'collapse',
-                  minWidth: '900px',
                 }}
               >
                 <thead>
                   <tr
                     style={{
-                      background:
-                        '#f3f4f6',
+                      background: '#f9fafb',
                     }}
                   >
                     <th style={thStyle}>
@@ -548,4 +487,86 @@ export default function PaymentHistoryPage() {
                     <th style={thStyle}>
                       Date
                     </th>
-                 
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {payments.map(
+                    (payment, index) => (
+                      <tr
+                        key={
+                          payment.id
+                        }
+                      >
+                        <td style={tdStyle}>
+                          {index + 1}
+                        </td>
+
+                        <td style={tdStyle}>
+                          {payment.id}
+                        </td>
+
+                        <td style={tdStyle}>
+                          {payment.orderId}
+                        </td>
+
+                        <td
+                          style={{
+                            ...tdStyle,
+                            fontWeight:
+                              'bold',
+                          }}
+                        >
+                          ₹
+                          {Number(
+                            payment.amount
+                          ).toFixed(2)}
+                        </td>
+
+                        <td
+                          style={{
+                            ...tdStyle,
+                            fontWeight:
+                              'bold',
+                          }}
+                        >
+                          {payment.status}
+                        </td>
+
+                        <td style={tdStyle}>
+                          {payment.method}
+                        </td>
+
+                        <td style={tdStyle}>
+                          {payment.contact}
+                        </td>
+
+                        <td style={tdStyle}>
+                          {formatDate(
+                            payment.createdAt
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+      </div>
+    </main>
+  );
+}
+
+const thStyle = {
+  padding: '14px',
+  textAlign: 'left',
+  borderBottom: '1px solid #ddd',
+  whiteSpace: 'nowrap',
+};
+
+const tdStyle = {
+  padding: '14px',
+  borderBottom: '1px solid #eee',
+  whiteSpace: 'nowrap',
+};
