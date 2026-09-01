@@ -54,9 +54,6 @@ export default function Home() {
     downloadStartedRef.current = false;
 
     setLoading(true);
-
-    // IMPORTANT:
-    // Clear old success state before starting payment
     setSuccessMessage('');
     setPdfUrl('');
 
@@ -924,7 +921,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* PAYMENT & DELIVERY */}
+        {/* PAYMENT & DIGITAL DELIVERY */}
 
         <div
           style={{
@@ -978,6 +975,119 @@ export default function Home() {
             digital PDF/file is delivered electronically
             and can be downloaded by the customer.
             No physical product will be shipped.
+          </p>
+        </div>
+
+        {/* SHIPPING & DELIVERY POLICY */}
+
+        <div
+          id="shipping"
+          style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '14px',
+            marginBottom: '20px',
+            boxShadow:
+              '0 3px 12px rgba(0,0,0,0.07)',
+          }}
+        >
+          <h2
+            style={{
+              margin: '0 0 10px',
+              color: '#222',
+            }}
+          >
+            🚚 Shipping & Delivery Policy
+          </h2>
+
+          <p
+            style={{
+              margin: '0 0 10px',
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            We provide digital PDF documents and
+            online digital services only.
+            No physical products are shipped or delivered.
+          </p>
+
+          <p
+            style={{
+              margin: '0 0 10px',
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            After successful payment, the purchased
+            PDF file will be available for immediate
+            download on our website.
+          </p>
+
+          <p
+            style={{
+              margin: '0 0 10px',
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            Since our products are digital, there is
+            no shipping charge and no physical delivery
+            is applicable.
+          </p>
+
+          <p
+            style={{
+              margin: 0,
+              color: '#555',
+              lineHeight: 1.6,
+            }}
+          >
+            If you experience any problem with your
+            PDF download after successful payment,
+            please contact us for assistance.
+          </p>
+        </div>
+
+        {/* BUSINESS ADDRESS */}
+
+        <div
+          style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '14px',
+            marginBottom: '20px',
+            boxShadow:
+              '0 3px 12px rgba(0,0,0,0.07)',
+          }}
+        >
+          <h2
+            style={{
+              margin: '0 0 10px',
+              color: '#222',
+            }}
+          >
+            📍 Business Address
+          </h2>
+
+          <p
+            style={{
+              margin: 0,
+              color: '#555',
+              lineHeight: 1.8,
+            }}
+          >
+            <strong>SR Internet Online Center</strong>
+            <br />
+            New Maa Mart Backside,
+            <br />
+            Kurnool Road, Ieeja,
+            <br />
+            Jogulamba Gadwal,
+            <br />
+            Telangana – 509127,
+            <br />
+            India.
           </p>
         </div>
 
@@ -1054,6 +1164,28 @@ export default function Home() {
             <strong>Business Hours:</strong>{' '}
             Monday to Saturday, 9:00 AM to 6:00 PM
           </p>
+
+          <p
+            style={{
+              margin: '12px 0 0',
+              color: '#555',
+              lineHeight: 1.8,
+            }}
+          >
+            <strong>Business Address:</strong>
+            <br />
+            SR Internet Online Center,
+            <br />
+            New Maa Mart Backside,
+            <br />
+            Kurnool Road, Ieeja,
+            <br />
+            Jogulamba Gadwal,
+            <br />
+            Telangana – 509127,
+            <br />
+            India.
+          </p>
         </div>
 
         {/* FOOTER */}
@@ -1112,6 +1244,19 @@ export default function Home() {
             >
               Terms & Conditions
             </a>
+
+            <span>•</span>
+
+            <a
+              href="#shipping"
+              style={{
+                color: '#1565c0',
+                textDecoration: 'none',
+                fontWeight: 'bold',
+              }}
+            >
+              Shipping & Delivery
+            </a>
           </div>
 
           <p>
@@ -1126,9 +1271,7 @@ export default function Home() {
 
       </section>
 
-      {/* ------------------------------------
-          FLOATING WHATSAPP HELP BUTTON
-          ------------------------------------ */}
+      {/* FLOATING WHATSAPP HELP BUTTON */}
 
       <a
         href="https://wa.me/919989057683?text=Hello%20SR%20E-Print%20Online,%20I%20need%20help%20regarding%20a%20PDF%20purchase."
