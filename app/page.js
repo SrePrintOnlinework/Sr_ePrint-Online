@@ -196,7 +196,10 @@ export default function Home() {
               );
             }
 
-            // GET PDF
+            // --------------------------------
+            // GET PDF BLOB
+            // --------------------------------
+
             const blob =
               await verifyRes.blob();
 
@@ -210,10 +213,18 @@ export default function Home() {
             }
 
             // --------------------------------
-            // PREVENT DUPLICATE DOWNLOAD
+            // CHECK PDF RESPONSE
             // --------------------------------
 
-            downloadStartedRef.current = true;
+            if (
+              blob.type &&
+              !blob.type.includes('pdf')
+            ) {
+              console.error(
+                'Unexpected response type:',
+                blob.type
+              );
+            }
 
             // --------------------------------
             // CREATE PDF URL
@@ -221,9 +232,16 @@ export default function Home() {
 
             const url =
               window.URL.createObjectURL(
-                blob
+                new Blob(
+                  [blob],
+                  {
+                    type: 'application/pdf',
+                  }
+                )
               );
 
+            // IMPORTANT:
+            // Set URL before success message
             setPdfUrl(url);
 
             // --------------------------------
@@ -261,6 +279,9 @@ export default function Home() {
             // --------------------------------
             // AUTOMATIC DOWNLOAD
             // --------------------------------
+
+            downloadStartedRef.current =
+              true;
 
             const link =
               document.createElement('a');
@@ -465,13 +486,13 @@ export default function Home() {
 
         {/* SUCCESS MESSAGE */}
 
-        {successMessage && (
+        {successMessage && pdfUrl && (
           <div
             style={{
               background: '#e8f5e9',
               border: '1px solid #81c784',
               color: '#2e7d32',
-              padding: '15px',
+              padding: '18px',
               borderRadius: '12px',
               marginBottom: '20px',
               textAlign: 'center',
@@ -479,27 +500,28 @@ export default function Home() {
               lineHeight: 1.5,
             }}
           >
-            {successMessage}
+            <div>
+              {successMessage}
+            </div>
 
-            {pdfUrl && (
-              <a
-                href={pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'block',
-                  marginTop: '12px',
-                  padding: '13px',
-                  background: '#2e7d32',
-                  color: 'white',
-                  borderRadius: '10px',
-                  textDecoration: 'none',
-                  fontWeight: 'bold',
-                }}
-              >
-                📄 Open PDF
-              </a>
-            )}
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'block',
+                marginTop: '12px',
+                padding: '14px',
+                background: '#2e7d32',
+                color: 'white',
+                borderRadius: '10px',
+                textDecoration: 'none',
+                fontWeight: 'bold',
+                fontSize: '16px',
+              }}
+            >
+              📄 Open PDF
+            </a>
           </div>
         )}
 
@@ -630,7 +652,6 @@ export default function Home() {
                     transition: '0.2s',
                   }}
                 >
-
                   <div
                     style={{
                       display: 'flex',
@@ -638,7 +659,6 @@ export default function Home() {
                       gap: '12px',
                     }}
                   >
-
                     <div
                       style={{
                         fontSize: '32px',
@@ -681,12 +701,10 @@ export default function Home() {
                     >
                       ₹99
                     </div>
-
                   </div>
                 </div>
               )
             )
-
           )}
         </div>
 
@@ -705,7 +723,6 @@ export default function Home() {
                 '0 3px 12px rgba(0,0,0,0.07)',
             }}
           >
-
             <div
               style={{
                 color: '#555',
@@ -743,21 +760,17 @@ export default function Home() {
                 padding: '15px',
                 border: 'none',
                 borderRadius: '10px',
-
                 background:
                   loading
                     ? '#999'
                     : '#1565c0',
-
                 color: 'white',
                 fontSize: '17px',
                 fontWeight: 'bold',
-
                 cursor:
                   loading
                     ? 'not-allowed'
                     : 'pointer',
-
                 opacity:
                   loading ? 0.8 : 1,
               }}
@@ -766,7 +779,6 @@ export default function Home() {
                 ? '⏳ Processing Payment...'
                 : '💳 Pay ₹99 & Download PDF'}
             </button>
-
           </div>
         )}
 
@@ -921,7 +933,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* PAYMENT & DIGITAL DELIVERY */}
+        {/* PAYMENT & DELIVERY */}
 
         <div
           style={{
@@ -978,10 +990,9 @@ export default function Home() {
           </p>
         </div>
 
-        {/* SHIPPING & DELIVERY POLICY */}
+        {/* SHIPPING POLICY */}
 
         <div
-          id="shipping"
           style={{
             background: 'white',
             padding: '20px',
@@ -997,7 +1008,7 @@ export default function Home() {
               color: '#222',
             }}
           >
-            🚚 Shipping & Delivery Policy
+            Shipping Policy
           </h2>
 
           <p
@@ -1007,9 +1018,9 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            We provide digital PDF documents and
-            online digital services only.
-            No physical products are shipped or delivered.
+            SR E-Print Online provides digital
+            products only. No physical products
+            are shipped to customers.
           </p>
 
           <p
@@ -1020,20 +1031,8 @@ export default function Home() {
             }}
           >
             After successful payment, the purchased
-            PDF file will be available for immediate
-            download on our website.
-          </p>
-
-          <p
-            style={{
-              margin: '0 0 10px',
-              color: '#555',
-              lineHeight: 1.6,
-            }}
-          >
-            Since our products are digital, there is
-            no shipping charge and no physical delivery
-            is applicable.
+            PDF or digital document is delivered
+            electronically through the website.
           </p>
 
           <p
@@ -1043,9 +1042,10 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            If you experience any problem with your
-            PDF download after successful payment,
-            please contact us for assistance.
+            Therefore, there is no physical shipping
+            charge, shipping address requirement,
+            courier delivery, or shipping time for
+            our digital products.
           </p>
         </div>
 
@@ -1067,27 +1067,29 @@ export default function Home() {
               color: '#222',
             }}
           >
-            📍 Business Address
+            Business Address
           </h2>
 
           <p
             style={{
               margin: 0,
               color: '#555',
-              lineHeight: 1.8,
+              lineHeight: 1.7,
             }}
           >
-            <strong>SR Internet Online Center</strong>
+            <strong>
+              SR INTERNET Online Centre
+            </strong>
             <br />
-            New Maa Mart Backside,
+            New Maa Mart backside
             <br />
-            Kurnool Road, Ieeja,
+            Kurnool Road
             <br />
-            Jogulamba Gadwal,
+            Ieeja, Jogulamba Gadwal
             <br />
-            Telangana – 509127,
+            Telangana - 509127
             <br />
-            India.
+            India
           </p>
         </div>
 
@@ -1164,28 +1166,6 @@ export default function Home() {
             <strong>Business Hours:</strong>{' '}
             Monday to Saturday, 9:00 AM to 6:00 PM
           </p>
-
-          <p
-            style={{
-              margin: '12px 0 0',
-              color: '#555',
-              lineHeight: 1.8,
-            }}
-          >
-            <strong>Business Address:</strong>
-            <br />
-            SR Internet Online Center,
-            <br />
-            New Maa Mart Backside,
-            <br />
-            Kurnool Road, Ieeja,
-            <br />
-            Jogulamba Gadwal,
-            <br />
-            Telangana – 509127,
-            <br />
-            India.
-          </p>
         </div>
 
         {/* FOOTER */}
@@ -1244,19 +1224,6 @@ export default function Home() {
             >
               Terms & Conditions
             </a>
-
-            <span>•</span>
-
-            <a
-              href="#shipping"
-              style={{
-                color: '#1565c0',
-                textDecoration: 'none',
-                fontWeight: 'bold',
-              }}
-            >
-              Shipping & Delivery
-            </a>
           </div>
 
           <p>
@@ -1271,7 +1238,7 @@ export default function Home() {
 
       </section>
 
-      {/* FLOATING WHATSAPP HELP BUTTON */}
+      {/* WHATSAPP */}
 
       <a
         href="https://wa.me/919989057683?text=Hello%20SR%20E-Print%20Online,%20I%20need%20help%20regarding%20a%20PDF%20purchase."
