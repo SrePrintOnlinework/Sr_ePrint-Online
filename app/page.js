@@ -1,3 +1,5 @@
+"app/page.js" లో ఉన్న మొత్తం codeని delete చేసి, కింద ఉన్న complete codeని paste చేయండి:
+
 'use client';
 
 import { useState, useRef } from 'react';
@@ -54,6 +56,9 @@ export default function Home() {
     downloadStartedRef.current = false;
 
     setLoading(true);
+
+    // IMPORTANT:
+    // Clear old success state before starting payment
     setSuccessMessage('');
     setPdfUrl('');
 
@@ -115,7 +120,10 @@ export default function Home() {
         );
       }
 
+      // ------------------------------------
       // RAZORPAY OPTIONS
+      // ------------------------------------
+
       const options = {
         key: razorpayKey,
 
@@ -221,7 +229,6 @@ export default function Home() {
                 blob
               );
 
-            // Keep URL for Open PDF button
             setPdfUrl(url);
 
             // --------------------------------
@@ -461,7 +468,7 @@ export default function Home() {
         }}
       >
 
-        {/* SUCCESS */}
+        {/* SUCCESS MESSAGE */}
 
         {successMessage && (
           <div
@@ -864,22 +871,10 @@ export default function Home() {
           >
             <li>Digital PDF documents</li>
             <li>Printable document files</li>
-            <li>
-              Ready-to-use document
-              formats and templates
-            </li>
-            <li>
-              Application and form-related
-              digital files
-            </li>
-            <li>
-              Educational and reference
-              PDF materials
-            </li>
-            <li>
-              Other digital document files
-              available on our website
-            </li>
+            <li>Ready-to-use document formats and templates</li>
+            <li>Application and form-related digital files</li>
+            <li>Educational and reference PDF materials</li>
+            <li>Other digital document files available on our website</li>
           </ul>
         </div>
 
@@ -912,30 +907,11 @@ export default function Home() {
               lineHeight: 1.9,
             }}
           >
-            <li>
-              Browse the available
-              digital products.
-            </li>
-
-            <li>
-              Select the required PDF
-              or digital file.
-            </li>
-
-            <li>
-              Proceed to online payment.
-            </li>
-
-            <li>
-              Complete the payment using
-              the available payment methods.
-            </li>
-
-            <li>
-              After successful payment,
-              download the purchased
-              digital file.
-            </li>
+            <li>Browse the available digital products.</li>
+            <li>Select the required PDF or digital file.</li>
+            <li>Proceed to online payment.</li>
+            <li>Complete the payment using the available payment methods.</li>
+            <li>After successful payment, download the purchased digital file.</li>
           </ol>
 
           <p
@@ -945,9 +921,8 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            Digital products are delivered
-            electronically. No physical
-            product is shipped.
+            Digital products are delivered electronically.
+            No physical product is shipped.
           </p>
         </div>
 
@@ -979,9 +954,8 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            We accept online payments
-            through the payment methods
-            available at checkout.
+            We accept online payments through
+            the payment methods available at checkout.
           </p>
 
           <p
@@ -991,9 +965,8 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            All prices displayed on the
-            website are in Indian Rupees
-            (INR).
+            All prices displayed on the website
+            are in Indian Rupees (INR).
           </p>
 
           <p
@@ -1003,12 +976,10 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            After successful payment, the
-            purchased digital PDF/file is
-            delivered electronically and
-            can be downloaded by the
-            customer. No physical product
-            will be shipped.
+            After successful payment, the purchased
+            digital PDF/file is delivered electronically
+            and can be downloaded by the customer.
+            No physical product will be shipped.
           </p>
         </div>
 
@@ -1041,56 +1012,47 @@ export default function Home() {
             }}
           >
             For any questions, payment-related
-            issues, or assistance with our
-            digital products, please contact us.
+            issues, or assistance with our digital
+            products, please contact us.
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Business Name:</strong>{' '}
             SR E-Print Online
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Contact Person:</strong>{' '}
             Gs Raju
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Email:</strong>{' '}
-            sronline99890@gmail.com
+            <a
+              href="mailto:sronline99890@gmail.com"
+              style={{
+                color: '#1565c0',
+                textDecoration: 'none',
+              }}
+            >
+              sronline99890@gmail.com
+            </a>
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Phone / WhatsApp:</strong>{' '}
-            9989057683
+            <a
+              href="tel:+919989057683"
+              style={{
+                color: '#1565c0',
+                textDecoration: 'none',
+              }}
+            >
+              9989057683
+            </a>
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Business Hours:</strong>{' '}
             Monday to Saturday, 9:00 AM to 6:00 PM
           </p>
@@ -1098,17 +1060,22 @@ export default function Home() {
 
         {/* FOOTER */}
 
-        <div
+        <footer
           style={{
             textAlign: 'center',
             marginTop: '30px',
             color: '#777',
             fontSize: '13px',
+            paddingBottom: '20px',
           }}
         >
-          <p
+          <div
             style={{
-              marginBottom: '10px',
+              display: 'flex',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              gap: '14px',
+              marginBottom: '14px',
             }}
           >
             <a
@@ -1121,7 +1088,33 @@ export default function Home() {
             >
               Privacy Policy
             </a>
-          </p>
+
+            <span>•</span>
+
+            <a
+              href="/refund"
+              style={{
+                color: '#1565c0',
+                textDecoration: 'none',
+                fontWeight: 'bold',
+              }}
+            >
+              Refund / Cancellation
+            </a>
+
+            <span>•</span>
+
+            <a
+              href="/terms"
+              style={{
+                color: '#1565c0',
+                textDecoration: 'none',
+                fontWeight: 'bold',
+              }}
+            >
+              Terms & Conditions
+            </a>
+          </div>
 
           <p>
             Secure payment powered by Razorpay
@@ -1131,9 +1124,41 @@ export default function Home() {
             © 2026 SR E-Print Online.
             All rights reserved.
           </p>
-        </div>
+        </footer>
 
       </section>
+
+      {/* ------------------------------------
+          FLOATING WHATSAPP HELP BUTTON
+          ------------------------------------ */}
+
+      <a
+        href="https://wa.me/919989057683?text=Hello%20SR%20E-Print%20Online,%20I%20need%20help%20regarding%20a%20PDF%20purchase."
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="WhatsApp Help"
+        style={{
+          position: 'fixed',
+          right: '18px',
+          bottom: '18px',
+          width: '58px',
+          height: '58px',
+          borderRadius: '50%',
+          background: '#25D366',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textDecoration: 'none',
+          fontSize: '30px',
+          boxShadow:
+            '0 4px 14px rgba(0,0,0,0.25)',
+          zIndex: 9999,
+        }}
+      >
+        💬
+      </a>
+
     </main>
   );
 }
