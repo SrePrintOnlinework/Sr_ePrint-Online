@@ -9,7 +9,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   // ------------------------------------
-  // Load Razorpay
+  // LOAD RAZORPAY
   // ------------------------------------
 
   const loadRazorpayScript = () => {
@@ -32,7 +32,7 @@ export default function Home() {
   };
 
   // ------------------------------------
-  // Payment
+  // PAYMENT
   // ------------------------------------
 
   const handlePayment = async () => {
@@ -44,7 +44,10 @@ export default function Home() {
     setLoading(true);
 
     try {
-      // Load Razorpay
+      // --------------------------------
+      // LOAD RAZORPAY
+      // --------------------------------
+
       const razorpayLoaded =
         await loadRazorpayScript();
 
@@ -59,7 +62,7 @@ export default function Home() {
       // --------------------------------
 
       const orderRes = await fetch(
-        '/api/create-order',
+        '/create-order',
         {
           method: 'POST',
 
@@ -74,9 +77,20 @@ export default function Home() {
         }
       );
 
-      // Try to read JSON
-      const orderData =
-        await orderRes.json();
+      // --------------------------------
+      // READ ORDER RESPONSE
+      // --------------------------------
+
+      let orderData;
+
+      try {
+        orderData =
+          await orderRes.json();
+      } catch (error) {
+        throw new Error(
+          'Server returned an invalid response. Please try again.'
+        );
+      }
 
       if (!orderRes.ok) {
         throw new Error(
@@ -92,7 +106,7 @@ export default function Home() {
       }
 
       // --------------------------------
-      // RAZORPAY KEY
+      // RAZORPAY PUBLIC KEY
       // --------------------------------
 
       const razorpayKey =
@@ -136,7 +150,7 @@ export default function Home() {
 
               const verifyRes =
                 await fetch(
-                  '/api/verify-payment',
+                  '/verify-payment',
                   {
                     method: 'POST',
 
@@ -162,7 +176,7 @@ export default function Home() {
                 );
 
               // --------------------------------
-              // CHECK RESPONSE
+              // CHECK VERIFICATION RESPONSE
               // --------------------------------
 
               if (!verifyRes.ok) {
@@ -177,7 +191,8 @@ export default function Home() {
                     errorData?.error ||
                     errorMessage;
                 } catch {
-                  // Response was not JSON
+                  errorMessage =
+                    'Payment verification failed. Server returned an invalid response.';
                 }
 
                 throw new Error(
@@ -186,7 +201,7 @@ export default function Home() {
               }
 
               // --------------------------------
-              // GET PDF
+              // GET PDF FILE
               // --------------------------------
 
               const blob =
@@ -232,6 +247,10 @@ export default function Home() {
                 url
               );
 
+              // --------------------------------
+              // SUCCESS
+              // --------------------------------
+
               alert(
                 '✅ Payment Successful! PDF downloaded.'
               );
@@ -268,13 +287,17 @@ export default function Home() {
       };
 
       // --------------------------------
-      // OPEN RAZORPAY
+      // OPEN RAZORPAY CHECKOUT
       // --------------------------------
 
       const razorpay =
         new window.Razorpay(
           options
         );
+
+      // --------------------------------
+      // PAYMENT FAILED
+      // --------------------------------
 
       razorpay.on(
         'payment.failed',
@@ -335,7 +358,9 @@ export default function Home() {
       }}
     >
 
-      {/* HEADER */}
+      {/* --------------------------------
+          HEADER
+      -------------------------------- */}
 
       <header
         style={{
@@ -380,7 +405,9 @@ export default function Home() {
         </div>
       </header>
 
-      {/* MAIN */}
+      {/* --------------------------------
+          MAIN
+      -------------------------------- */}
 
       <section
         style={{
@@ -391,7 +418,9 @@ export default function Home() {
         }}
       >
 
-        {/* INTRO */}
+        {/* --------------------------------
+            INTRO
+        -------------------------------- */}
 
         <div
           style={{
@@ -427,7 +456,9 @@ export default function Home() {
           </p>
         </div>
 
-        {/* SEARCH */}
+        {/* --------------------------------
+            SEARCH
+        -------------------------------- */}
 
         <input
           type="text"
@@ -450,7 +481,9 @@ export default function Home() {
           }}
         />
 
-        {/* PDF LIST */}
+        {/* --------------------------------
+            PDF LIST
+        -------------------------------- */}
 
         <div
           style={{
@@ -474,6 +507,7 @@ export default function Home() {
           </h3>
 
           {filteredPdfs.length === 0 ? (
+
             <p
               style={{
                 padding: '20px 10px',
@@ -483,9 +517,12 @@ export default function Home() {
             >
               No PDF found.
             </p>
+
           ) : (
+
             filteredPdfs.map(
               (pdf) => (
+
                 <div
                   key={pdf.id}
                   onClick={() =>
@@ -534,6 +571,7 @@ export default function Home() {
                         flex: 1,
                       }}
                     >
+
                       <div
                         style={{
                           fontWeight: 'bold',
@@ -553,6 +591,7 @@ export default function Home() {
                       >
                         PDF Document
                       </div>
+
                     </div>
 
                     <div
@@ -567,15 +606,20 @@ export default function Home() {
                   </div>
 
                 </div>
+
               )
             )
+
           )}
 
         </div>
 
-        {/* SELECTED PDF */}
+        {/* --------------------------------
+            SELECTED PDF
+        -------------------------------- */}
 
         {selectedPdf && (
+
           <div
             style={{
               background: 'white',
@@ -648,9 +692,12 @@ export default function Home() {
             </button>
 
           </div>
+
         )}
 
-        {/* ABOUT US */}
+        {/* --------------------------------
+            ABOUT US
+        -------------------------------- */}
 
         <div
           style={{
@@ -662,6 +709,7 @@ export default function Home() {
               '0 3px 12px rgba(0,0,0,0.07)',
           }}
         >
+
           <h2
             style={{
               margin: '0 0 10px',
@@ -713,9 +761,12 @@ export default function Home() {
             files through an easy-to-use
             online platform.
           </p>
+
         </div>
 
-        {/* SERVICES */}
+        {/* --------------------------------
+            SERVICES
+        -------------------------------- */}
 
         <div
           style={{
@@ -727,6 +778,7 @@ export default function Home() {
               '0 3px 12px rgba(0,0,0,0.07)',
           }}
         >
+
           <h2
             style={{
               margin: '0 0 12px',
@@ -744,8 +796,14 @@ export default function Home() {
               lineHeight: 1.9,
             }}
           >
-            <li>Digital PDF documents</li>
-            <li>Printable document files</li>
+
+            <li>
+              Digital PDF documents
+            </li>
+
+            <li>
+              Printable document files
+            </li>
 
             <li>
               Ready-to-use document
@@ -766,10 +824,14 @@ export default function Home() {
               Other digital document files
               available on our website
             </li>
+
           </ul>
+
         </div>
 
-        {/* HOW IT WORKS */}
+        {/* --------------------------------
+            HOW IT WORKS
+        -------------------------------- */}
 
         <div
           style={{
@@ -781,6 +843,7 @@ export default function Home() {
               '0 3px 12px rgba(0,0,0,0.07)',
           }}
         >
+
           <h2
             style={{
               margin: '0 0 12px',
@@ -798,6 +861,7 @@ export default function Home() {
               lineHeight: 1.9,
             }}
           >
+
             <li>
               Browse the available
               digital products.
@@ -822,6 +886,7 @@ export default function Home() {
               download the purchased
               digital file.
             </li>
+
           </ol>
 
           <p
@@ -835,9 +900,12 @@ export default function Home() {
             electronically. No physical
             product is shipped.
           </p>
+
         </div>
 
-        {/* PAYMENT & DELIVERY */}
+        {/* --------------------------------
+            PAYMENT & DELIVERY
+        -------------------------------- */}
 
         <div
           style={{
@@ -849,6 +917,7 @@ export default function Home() {
               '0 3px 12px rgba(0,0,0,0.07)',
           }}
         >
+
           <h2
             style={{
               margin: '0 0 10px',
@@ -896,9 +965,12 @@ export default function Home() {
             customer. No physical product
             will be shipped.
           </p>
+
         </div>
 
-        {/* CONTACT */}
+        {/* --------------------------------
+            CONTACT
+        -------------------------------- */}
 
         <div
           style={{
@@ -910,6 +982,7 @@ export default function Home() {
               '0 3px 12px rgba(0,0,0,0.07)',
           }}
         >
+
           <h2
             style={{
               margin: '0 0 10px',
@@ -937,7 +1010,9 @@ export default function Home() {
               color: '#555',
             }}
           >
-            <strong>Business Name:</strong>{' '}
+            <strong>
+              Business Name:
+            </strong>{' '}
             SR E-Print Online
           </p>
 
@@ -947,7 +1022,9 @@ export default function Home() {
               color: '#555',
             }}
           >
-            <strong>Contact Person:</strong>{' '}
+            <strong>
+              Contact Person:
+            </strong>{' '}
             Gs Raju
           </p>
 
@@ -957,7 +1034,9 @@ export default function Home() {
               color: '#555',
             }}
           >
-            <strong>Email:</strong>{' '}
+            <strong>
+              Email:
+            </strong>{' '}
             sronline99890@gmail.com
           </p>
 
@@ -967,7 +1046,9 @@ export default function Home() {
               color: '#555',
             }}
           >
-            <strong>Phone / WhatsApp:</strong>{' '}
+            <strong>
+              Phone / WhatsApp:
+            </strong>{' '}
             9989057683
           </p>
 
@@ -977,12 +1058,17 @@ export default function Home() {
               color: '#555',
             }}
           >
-            <strong>Business Hours:</strong>{' '}
+            <strong>
+              Business Hours:
+            </strong>{' '}
             Monday to Saturday, 9:00 AM to 6:00 PM
           </p>
+
         </div>
 
-        {/* FOOTER */}
+        {/* --------------------------------
+            FOOTER
+        -------------------------------- */}
 
         <div
           style={{
@@ -992,6 +1078,7 @@ export default function Home() {
             fontSize: '13px',
           }}
         >
+
           <p
             style={{
               marginBottom: '10px',
@@ -1017,6 +1104,7 @@ export default function Home() {
             © 2026 SR E-Print Online.
             All rights reserved.
           </p>
+
         </div>
 
       </section>
