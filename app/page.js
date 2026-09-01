@@ -7,6 +7,7 @@ export default function Home() {
   const [selectedPdf, setSelectedPdf] = useState(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // ------------------------------------
   // LOAD RAZORPAY
@@ -25,6 +26,7 @@ export default function Home() {
         'https://checkout.razorpay.com/v1/checkout.js';
 
       script.onload = () => resolve(true);
+
       script.onerror = () => resolve(false);
 
       document.body.appendChild(script);
@@ -42,6 +44,7 @@ export default function Home() {
     }
 
     setLoading(true);
+    setSuccessMessage('');
 
     try {
       // --------------------------------
@@ -86,7 +89,7 @@ export default function Home() {
       try {
         orderData =
           await orderRes.json();
-      } catch (error) {
+      } catch {
         throw new Error(
           'Server returned an invalid response. Please try again.'
         );
@@ -141,6 +144,10 @@ export default function Home() {
         order_id:
           orderData.orderId,
 
+        // --------------------------------
+        // PAYMENT SUCCESS
+        // --------------------------------
+
         handler:
           async function (response) {
             try {
@@ -176,7 +183,7 @@ export default function Home() {
                 );
 
               // --------------------------------
-              // CHECK VERIFICATION RESPONSE
+              // CHECK VERIFICATION
               // --------------------------------
 
               if (!verifyRes.ok) {
@@ -192,7 +199,7 @@ export default function Home() {
                     errorMessage;
                 } catch {
                   errorMessage =
-                    'Payment verification failed. Server returned an invalid response.';
+                    'Payment verification failed.';
                 }
 
                 throw new Error(
@@ -201,7 +208,7 @@ export default function Home() {
               }
 
               // --------------------------------
-              // GET PDF FILE
+              // GET PDF
               // --------------------------------
 
               const blob =
@@ -217,7 +224,7 @@ export default function Home() {
               }
 
               // --------------------------------
-              // DOWNLOAD PDF
+              // AUTOMATIC PDF DOWNLOAD
               // --------------------------------
 
               const url =
@@ -235,24 +242,35 @@ export default function Home() {
               link.download =
                 selectedPdf.file;
 
+              link.style.display =
+                'none';
+
               document.body.appendChild(
                 link
               );
 
               link.click();
 
-              link.remove();
-
-              window.URL.revokeObjectURL(
-                url
+              document.body.removeChild(
+                link
               );
 
               // --------------------------------
-              // SUCCESS
+              // CLEAN URL AFTER DOWNLOAD STARTS
               // --------------------------------
 
-              alert(
-                '✅ Payment Successful! PDF downloaded.'
+              setTimeout(() => {
+                window.URL.revokeObjectURL(
+                  url
+                );
+              }, 2000);
+
+              // --------------------------------
+              // SUCCESS MESSAGE
+              // --------------------------------
+
+              setSuccessMessage(
+                '✅ Payment Successful! Your PDF download has started.'
               );
 
             } catch (error) {
@@ -287,7 +305,7 @@ export default function Home() {
       };
 
       // --------------------------------
-      // OPEN RAZORPAY CHECKOUT
+      // OPEN RAZORPAY
       // --------------------------------
 
       const razorpay =
@@ -376,6 +394,7 @@ export default function Home() {
             margin: 'auto',
           }}
         >
+
           <div
             style={{
               fontSize: '42px',
@@ -402,6 +421,7 @@ export default function Home() {
           >
             Digital PDF & Online Services
           </p>
+
         </div>
       </header>
 
@@ -419,6 +439,29 @@ export default function Home() {
       >
 
         {/* --------------------------------
+            SUCCESS MESSAGE
+        -------------------------------- */}
+
+        {successMessage && (
+          <div
+            style={{
+              background: '#e8f5e9',
+              border:
+                '1px solid #81c784',
+              color: '#2e7d32',
+              padding: '15px',
+              borderRadius: '12px',
+              marginBottom: '20px',
+              textAlign: 'center',
+              fontWeight: 'bold',
+              lineHeight: 1.5,
+            }}
+          >
+            {successMessage}
+          </div>
+        )}
+
+        {/* --------------------------------
             INTRO
         -------------------------------- */}
 
@@ -433,6 +476,7 @@ export default function Home() {
               '0 3px 12px rgba(0,0,0,0.07)',
           }}
         >
+
           <h2
             style={{
               margin: '0 0 8px',
@@ -454,6 +498,7 @@ export default function Home() {
             ₹99, and download your PDF
             instantly.
           </p>
+
         </div>
 
         {/* --------------------------------
@@ -525,9 +570,10 @@ export default function Home() {
 
                 <div
                   key={pdf.id}
-                  onClick={() =>
-                    setSelectedPdf(pdf)
-                  }
+                  onClick={() => {
+                    setSelectedPdf(pdf);
+                    setSuccessMessage('');
+                  }}
                   style={{
                     border:
                       selectedPdf?.id ===
