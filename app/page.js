@@ -1,5 +1,3 @@
-"app/page.js" లో ఉన్న మొత్తం codeని delete చేసి, కింద ఉన్న complete codeని paste చేయండి:
-
 'use client';
 
 import { useState, useRef } from 'react';
