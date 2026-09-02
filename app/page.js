@@ -636,7 +636,7 @@ export default function Home() {
               style={{
                 position: 'absolute',
                 left: '15px',
-                top: '50%',
+                top: '100%',
                 transform:
                   'translateY(-50%)',
                 fontSize: '20px',
@@ -654,7 +654,7 @@ export default function Home() {
                 setSearch(e.target.value)
               }
               style={{
-                width: '50%',
+                width: '80%',
                 boxSizing: 'border-box',
                 padding:
                   '15px 15px 15px 47px',
@@ -664,7 +664,7 @@ export default function Home() {
                   '2px solid #1976d2',
                 borderRadius: '10px',
                 outline: 'none',
-                background: 'white',
+                background: 'blue',
                 color: '#222',
                 boxShadow:
                   '0 2px 7px rgba(21,101,192,0.12)',
@@ -700,7 +700,7 @@ export default function Home() {
 
         <div
           style={{
-            background: 'red',
+            background: 'lightgreen',
             borderRadius: '14px',
             padding: '10px',
             boxShadow:
