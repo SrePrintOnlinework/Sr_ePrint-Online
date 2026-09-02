@@ -664,7 +664,7 @@ export default function Home() {
                   '2px solid #1976d2',
                 borderRadius: '10px',
                 outline: 'none',
-                background: 'blue',
+                background: 'lightblue',
                 color: '#222',
                 boxShadow:
                   '0 2px 7px rgba(21,101,192,0.12)',
@@ -891,7 +891,7 @@ export default function Home() {
                     ? '#999'
                     : 'linear-gradient(135deg, #1565c0, #1976d2)',
 
-                color: 'white',
+                color: 'lightblue',
                 fontSize: '17px',
                 fontWeight: 'bold',
 
