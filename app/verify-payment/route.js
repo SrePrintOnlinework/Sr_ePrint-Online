@@ -638,7 +638,7 @@ export default function Home() {
                 left: '15px',
                 top: '100%',
                 transform:
-                  'translateY(-50%)',
+                  'translateY(-100%)',
                 fontSize: '20px',
                 pointerEvents: 'none',
               }}
