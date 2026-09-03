@@ -8,8 +8,8 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [pdfUrl, setPdfUrl] = useState('');
 
-  // Prevent duplicate payment/download
   const paymentStartedRef = useRef(false);
   const downloadStartedRef = useRef(false);
 
@@ -46,7 +46,6 @@ export default function Home() {
       return;
     }
 
-    // Prevent double click
     if (paymentStartedRef.current) {
       return;
     }
@@ -56,12 +55,10 @@ export default function Home() {
 
     setLoading(true);
     setSuccessMessage('');
+    setPdfUrl('');
 
     try {
-      // --------------------------------
       // LOAD RAZORPAY
-      // --------------------------------
-
       const razorpayLoaded =
         await loadRazorpayScript();
 
@@ -71,10 +68,7 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
       // CREATE ORDER
-      // --------------------------------
-
       const orderRes = await fetch(
         '/create-order',
         {
@@ -87,10 +81,6 @@ export default function Home() {
           }),
         }
       );
-
-      // --------------------------------
-      // READ ORDER RESPONSE
-      // --------------------------------
 
       let orderData;
 
@@ -115,10 +105,7 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
-      // RAZORPAY PUBLIC KEY
-      // --------------------------------
-
+      // PUBLIC KEY
       const razorpayKey =
         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
@@ -128,9 +115,9 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
+      // ------------------------------------
       // RAZORPAY OPTIONS
-      // --------------------------------
+      // ------------------------------------
 
       const options = {
         key: razorpayKey,
@@ -156,18 +143,11 @@ export default function Home() {
 
         handler: async function (response) {
           try {
-            // --------------------------------
-            // DUPLICATE HANDLER PROTECTION
-            // --------------------------------
-
             if (downloadStartedRef.current) {
               return;
             }
 
-            // --------------------------------
             // VERIFY PAYMENT
-            // --------------------------------
-
             const verifyRes =
               await fetch(
                 '/verify-payment',
@@ -194,10 +174,6 @@ export default function Home() {
                   }),
                 }
               );
-
-            // --------------------------------
-            // CHECK VERIFICATION
-            // --------------------------------
 
             if (!verifyRes.ok) {
               let errorMessage =
@@ -226,6 +202,65 @@ export default function Home() {
 
             const blob =
               await verifyRes.blob();
+
+            if (
+              !blob ||
+              blob.size === 0
+            ) {
+              throw new Error(
+                'PDF file is empty'
+              );
+            }
+
+            // --------------------------------
+            // CREATE PDF URL
+            // --------------------------------
+
+            const url =
+              window.URL.createObjectURL(
+                new Blob(
+                  [blob],
+                  {
+                    type: 'application/pdf',
+                  }
+                )
+              );
+
+            setPdfUrl(url);
+
+            // --------------------------------
+            // FILE NAME
+            // --------------------------------
+
+            const originalName =
+              selectedPdf.file;
+
+            const dotIndex =
+              originalName.lastIndexOf('.');
+
+            let baseName =
+              originalName;
+
+            let extension =
+              '.pdf';
+
+            if (dotIndex > 0) {
+              baseName =
+                originalName.substring(
+                  0,
+                  dotIndex
+                );
+
+              extension =
+                originalName.substring(
+                  dotIndex
+                );
+            }
+
+            const uniqueFileName =
+              `${baseName}-payment-${response.razorpay_payment_id}${extension}`;
+
+            // --------------------------------
             // AUTO DOWNLOAD
             // --------------------------------
 
