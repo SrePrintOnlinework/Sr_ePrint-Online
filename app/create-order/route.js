@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { pdfs } from '../pdfs';
 
 export const dynamic = 'force-dynamic';
@@ -6,18 +7,18 @@ export const runtime = 'nodejs';
 
 export async function POST(request) {
   try {
+    // ==========================================
+    // READ REQUEST
+    // ==========================================
+
     const body = await request.json();
-
     const pdfId = body?.pdfId;
-
-    // ==========================================
-    // CHECK PDF ID
-    // ==========================================
 
     if (!pdfId) {
       return NextResponse.json(
         {
-          error: 'PDF ID is required.',
+          success: false,
+          error: 'PDF ID is required',
         },
         { status: 400 }
       );
@@ -27,35 +28,32 @@ export async function POST(request) {
     // FIND PDF
     // ==========================================
 
-    const selectedPdf = pdfs.find(
-      (pdf) => String(pdf.id) === String(pdfId)
-    );
+    const selectedPdf = pdfs.find((pdf) => pdf.id === pdfId);
 
     if (!selectedPdf) {
       return NextResponse.json(
         {
-          error: 'Selected PDF not found.',
+          success: false,
+          error: 'PDF not found',
         },
         { status: 404 }
       );
     }
 
     // ==========================================
-    // RAZORPAY ENVIRONMENT VARIABLES
+    // ENV VARIABLES
     // ==========================================
 
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!keyId || !keySecret) {
-      console.error(
-        'Razorpay environment variables are missing.'
-      );
+      console.error('Razorpay environment variables are missing');
 
       return NextResponse.json(
         {
-          error:
-            'Razorpay payment configuration is missing.',
+          success: false,
+          error: 'Razorpay configuration is missing',
         },
         { status: 500 }
       );
@@ -65,136 +63,96 @@ export async function POST(request) {
     // PRICE
     // ==========================================
 
-    const price = Number(selectedPdf.price);
+    const amount = Math.round(Number(selectedPdf.price) * 100);
 
-    if (!Number.isFinite(price) || price <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
         {
-          error: 'Invalid PDF price configuration.',
-        },
-        { status: 500 }
-      );
-    }
-
-    // Convert INR to paise
-    // ₹99 = 9900
-    // ₹20 = 2000
-
-    const amount = Math.round(price * 100);
-
-    // ==========================================
-    // RAZORPAY BASIC AUTH
-    // ==========================================
-
-    const auth = Buffer.from(
-      `${keyId}:${keySecret}`
-    ).toString('base64');
-
-    // ==========================================
-    // CREATE RAZORPAY ORDER
-    // ==========================================
-
-    const response = await fetch(
-      'https://api.razorpay.com/v1/orders',
-      {
-        method: 'POST',
-
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${auth}`,
-        },
-
-        body: JSON.stringify({
-          amount,
-          currency: 'INR',
-
-          receipt:
-            `pdf_${selectedPdf.id}_${Date.now()}`,
-
-          notes: {
-            pdfId: String(selectedPdf.id),
-            pdfName: String(selectedPdf.name || ''),
-            price: String(price),
-          },
-        }),
-
-        cache: 'no-store',
-      }
-    );
-
-    const data = await response.json();
-
-    // ==========================================
-    // RAZORPAY ERROR
-    // ==========================================
-
-    if (!response.ok) {
-      console.error(
-        'Razorpay order creation failed:',
-        data
-      );
-
-      return NextResponse.json(
-        {
-          error:
-            data?.error?.description ||
-            'Failed to create Razorpay order.',
+          success: false,
+          error: 'Invalid PDF price',
         },
         { status: 400 }
       );
     }
 
     // ==========================================
-    // CHECK ORDER ID
+    // CREATE RAZORPAY ORDER
     // ==========================================
 
-    if (!data?.id) {
-      console.error(
-        'Razorpay order ID missing:',
-        data
-      );
+    const receipt = `pdf_${selectedPdf.id}_${Date.now()}`;
+
+    const orderData = {
+      amount,
+      currency: 'INR',
+      receipt,
+      notes: {
+        pdfId: selectedPdf.id,
+        pdfName: selectedPdf.name,
+        pdfFile: selectedPdf.file,
+      },
+    };
+
+    const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+
+    const razorpayResponse = await fetch(
+      'https://api.razorpay.com/v1/orders',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+        cache: 'no-store',
+      }
+    );
+
+    const razorpayData = await razorpayResponse.json();
+
+    // ==========================================
+    // RAZORPAY ERROR
+    // ==========================================
+
+    if (!razorpayResponse.ok) {
+      console.error('Razorpay order error:', razorpayData);
 
       return NextResponse.json(
         {
+          success: false,
           error:
-            'Razorpay Order ID was not received.',
+            razorpayData?.error?.description ||
+            'Failed to create Razorpay order',
         },
-        { status: 500 }
+        { status: razorpayResponse.status }
       );
     }
-
-    console.log(
-      'Razorpay order created:',
-      data.id
-    );
 
     // ==========================================
     // SUCCESS
     // ==========================================
 
-    return NextResponse.json(
-      {
-        orderId: data.id,
-        amount: data.amount,
-        currency: data.currency,
-        pdfId: String(selectedPdf.id),
-        pdfName: selectedPdf.name,
-        price,
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      success: true,
 
+      orderId: razorpayData.id,
+
+      amount: razorpayData.amount,
+
+      currency: razorpayData.currency,
+
+      keyId,
+
+      pdfId: selectedPdf.id,
+
+      pdfName: selectedPdf.name,
+    });
   } catch (error) {
-    console.error(
-      'CREATE ORDER ERROR:',
-      error
-    );
+    console.error('Create order error:', error);
 
     return NextResponse.json(
       {
-        error:
-          error?.message ||
-          'Something went wrong while creating the payment order.',
+        success: false,
+        error: 'Unable to create payment order',
       },
       { status: 500 }
     );
