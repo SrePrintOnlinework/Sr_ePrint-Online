@@ -28,8 +28,7 @@ export async function POST(request) {
     // ==========================================
 
     const selectedPdf = pdfs.find(
-      (pdf) =>
-        String(pdf.id) === String(pdfId)
+      (pdf) => String(pdf.id) === String(pdfId)
     );
 
     if (!selectedPdf) {
@@ -42,14 +41,11 @@ export async function POST(request) {
     }
 
     // ==========================================
-    // RAZORPAY KEYS
+    // RAZORPAY ENVIRONMENT VARIABLES
     // ==========================================
 
-    const keyId =
-      process.env.RAZORPAY_KEY_ID;
-
-    const keySecret =
-      process.env.RAZORPAY_KEY_SECRET;
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!keyId || !keySecret) {
       console.error(
@@ -69,28 +65,25 @@ export async function POST(request) {
     // PRICE
     // ==========================================
 
-    const price =
-      Number(selectedPdf.price);
+    const price = Number(selectedPdf.price);
 
-    if (
-      !Number.isFinite(price) ||
-      price <= 0
-    ) {
+    if (!Number.isFinite(price) || price <= 0) {
       return NextResponse.json(
         {
-          error:
-            'Invalid PDF price configuration.',
+          error: 'Invalid PDF price configuration.',
         },
         { status: 500 }
       );
     }
 
-    // ₹99 = 9900 paise
-    const amount =
-      Math.round(price * 100);
+    // Convert INR to paise
+    // ₹99 = 9900
+    // ₹20 = 2000
+
+    const amount = Math.round(price * 100);
 
     // ==========================================
-    // BASIC AUTH
+    // RAZORPAY BASIC AUTH
     // ==========================================
 
     const auth = Buffer.from(
@@ -107,27 +100,21 @@ export async function POST(request) {
         method: 'POST',
 
         headers: {
-          'Content-Type':
-            'application/json',
-
-          Authorization:
-            `Basic ${auth}`,
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${auth}`,
         },
 
         body: JSON.stringify({
-          amount: amount,
-
+          amount,
           currency: 'INR',
 
           receipt:
             `pdf_${selectedPdf.id}_${Date.now()}`,
 
           notes: {
-            pdfId:
-              String(selectedPdf.id),
-
-            pdfName:
-              String(selectedPdf.name || ''),
+            pdfId: String(selectedPdf.id),
+            pdfName: String(selectedPdf.name || ''),
+            price: String(price),
           },
         }),
 
@@ -135,8 +122,7 @@ export async function POST(request) {
       }
     );
 
-    const data =
-      await response.json();
+    const data = await response.json();
 
     // ==========================================
     // RAZORPAY ERROR
@@ -183,23 +169,17 @@ export async function POST(request) {
     );
 
     // ==========================================
-    // SUCCESS RESPONSE
+    // SUCCESS
     // ==========================================
 
     return NextResponse.json(
       {
         orderId: data.id,
-
         amount: data.amount,
-
-        currency:
-          data.currency,
-
-        pdfId:
-          String(selectedPdf.id),
-
-        pdfName:
-          selectedPdf.name,
+        currency: data.currency,
+        pdfId: String(selectedPdf.id),
+        pdfName: selectedPdf.name,
+        price,
       },
       { status: 200 }
     );
