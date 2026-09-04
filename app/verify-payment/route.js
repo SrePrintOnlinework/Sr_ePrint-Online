@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body =
+      await request.json();
 
     const {
       razorpay_order_id,
@@ -17,6 +18,10 @@ export async function POST(request) {
       razorpay_signature,
       pdfId,
     } = body;
+
+    // ==========================================
+    // CHECK PAYMENT DATA
+    // ==========================================
 
     if (
       !razorpay_order_id ||
@@ -26,7 +31,8 @@ export async function POST(request) {
     ) {
       return NextResponse.json(
         {
-          error: 'Required payment information is missing.',
+          error:
+            'Required payment information is missing.',
         },
         { status: 400 }
       );
@@ -46,41 +52,56 @@ export async function POST(request) {
 
       return NextResponse.json(
         {
-          error: 'Payment configuration error.',
+          error:
+            'Payment configuration error.',
         },
         { status: 500 }
       );
     }
 
     // ==========================================
-    // VERIFY PAYMENT SIGNATURE
+    // VERIFY SIGNATURE
     // ==========================================
 
     const generatedSignature =
       crypto
-        .createHmac('sha256', secret)
+        .createHmac(
+          'sha256',
+          secret
+        )
         .update(
           `${razorpay_order_id}|${razorpay_payment_id}`
         )
         .digest('hex');
 
-    if (
-      generatedSignature.length !==
-      razorpay_signature.length
-    ) {
-      return NextResponse.json(
-        {
-          error: 'Payment verification failed.',
-        },
-        { status: 400 }
-      );
-    }
+    let signatureValid = false;
 
-    const signatureValid =
-      crypto.timingSafeEqual(
-        Buffer.from(generatedSignature, 'utf8'),
-        Buffer.from(razorpay_signature, 'utf8')
-      );
+    try {
+      const generatedBuffer =
+        Buffer.from(
+          generatedSignature,
+          'hex'
+        );
+
+      const receivedBuffer =
+        Buffer.from(
+          razorpay_signature,
+          'hex'
+        );
+
+      if (
+        generatedBuffer.length ===
+        receivedBuffer.length
+      ) {
+        signatureValid =
+          crypto.timingSafeEqual(
+            generatedBuffer,
+            receivedBuffer
+          );
+      }
+    } catch (error) {
+      signatureValid = false;
+    }
 
     if (!signatureValid) {
       console.error(
@@ -89,15 +110,15 @@ export async function POST(request) {
 
       return NextResponse.json(
         {
-          error: 'Payment verification failed.',
+          error:
+            'Payment verification failed.',
         },
         { status: 400 }
       );
     }
 
     console.log(
-      '✅ Razorpay payment verified:',
-      razorpay_payment_id
+      'Razorpay signature verified successfully.'
     );
 
     // ==========================================
@@ -126,10 +147,19 @@ export async function POST(request) {
       );
     }
 
+    // ==========================================
+    // FILE NAME
+    // ==========================================
+
     const fileName =
       selectedPdf.file;
 
     if (!fileName) {
+      console.error(
+        'PDF file name is missing:',
+        selectedPdf
+      );
+
       return NextResponse.json(
         {
           error:
@@ -140,7 +170,7 @@ export async function POST(request) {
     }
 
     // ==========================================
-    // SECURITY
+    // SECURITY CHECK
     // ==========================================
 
     if (
@@ -148,26 +178,38 @@ export async function POST(request) {
       fileName.includes('\\') ||
       path.isAbsolute(fileName)
     ) {
+      console.error(
+        'Invalid PDF file path:',
+        fileName
+      );
+
       return NextResponse.json(
         {
-          error: 'Invalid PDF file path.',
+          error:
+            'Invalid PDF file path.',
         },
         { status: 400 }
       );
     }
 
     // ==========================================
-    // PDF PATH
+    // PUBLIC DIRECTORY
     // ==========================================
 
-    const filePath = path.join(
-      process.cwd(),
-      'public',
-      fileName
-    );
+    const publicDirectory =
+      path.join(
+        process.cwd(),
+        'public'
+      );
+
+    const filePath =
+      path.join(
+        publicDirectory,
+        fileName
+      );
 
     console.log(
-      'PDF PATH:',
+      'PDF path:',
       filePath
     );
 
@@ -175,9 +217,11 @@ export async function POST(request) {
     // CHECK FILE
     // ==========================================
 
-    if (!fs.existsSync(filePath)) {
+    if (
+      !fs.existsSync(filePath)
+    ) {
       console.error(
-        'PDF FILE NOT FOUND:',
+        'PDF file does not exist:',
         filePath
       );
 
@@ -201,48 +245,26 @@ export async function POST(request) {
       !fileBuffer ||
       fileBuffer.length === 0
     ) {
-      return NextResponse.json(
-        {
-          error: 'PDF file is empty.',
-        },
-        { status: 500 }
-      );
-    }
-
-    // ==========================================
-    // CHECK PDF
-    // ==========================================
-
-    const header =
-      fileBuffer
-        .subarray(0, 4)
-        .toString('ascii');
-
-    if (header !== '%PDF') {
       console.error(
-        'Invalid PDF header:',
-        header
+        'PDF file is empty:',
+        filePath
       );
 
       return NextResponse.json(
         {
           error:
-            'Selected file is not a valid PDF.',
+            'PDF file is empty.',
         },
         { status: 500 }
       );
     }
-
-    console.log(
-      `✅ PDF READY: ${fileName} (${fileBuffer.length} bytes)`
-    );
 
     // ==========================================
     // RETURN PDF
     // ==========================================
 
     return new NextResponse(
-      new Uint8Array(fileBuffer),
+      fileBuffer,
       {
         status: 200,
 
@@ -250,21 +272,19 @@ export async function POST(request) {
           'Content-Type':
             'application/pdf',
 
-          // IMPORTANT:
-          // inline = browserలో PDF open అవుతుంది
           'Content-Disposition':
-            `inline; filename="${path.basename(fileName)}"`,
+            `attachment; filename="${fileName}"`,
 
           'Content-Length':
             String(fileBuffer.length),
 
           'Cache-Control':
-            'no-store, no-cache, must-revalidate',
+            'no-store, no-cache, must-revalidate, proxy-revalidate',
 
-          'Pragma':
+          Pragma:
             'no-cache',
 
-          'Expires':
+          Expires:
             '0',
         },
       }
