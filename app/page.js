@@ -536,7 +536,7 @@ export default function Home() {
             }}
           >
             Select the required PDF,
-            make a secure payment of ₹99,
+            make a secure payment of the displayed price,
             and download your PDF instantly.
           </p>
         </div>
@@ -682,7 +682,7 @@ export default function Home() {
                         color: '#1565c0',
                       }}
                     >
-                      ₹99
+                      ₹{pdf.price}
                     </div>
 
                   </div>
@@ -735,7 +735,7 @@ export default function Home() {
                 marginBottom: '15px',
               }}
             >
-              ₹99
+              ₹{selectedPdf.price}
             </div>
 
             <button
@@ -767,7 +767,7 @@ export default function Home() {
             >
               {loading
                 ? '⏳ Processing Payment...'
-                : '💳 Pay ₹99 & Download PDF'}
+                : `💳 Pay ₹${selectedPdf.price} & Download PDF`}
             </button>
 
           </div>
