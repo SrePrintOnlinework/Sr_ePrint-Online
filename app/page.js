@@ -13,9 +13,9 @@ export default function Home() {
   const paymentStartedRef = useRef(false);
   const downloadStartedRef = useRef(false);
 
-  // ------------------------------------
+  // ==========================================
   // LOAD RAZORPAY
-  // ------------------------------------
+  // ==========================================
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -48,9 +48,9 @@ export default function Home() {
     });
   };
 
-  // ------------------------------------
+  // ==========================================
   // DOWNLOAD PDF
-  // ------------------------------------
+  // ==========================================
 
   const downloadPdf = (url, fileName) => {
     if (!url) {
@@ -75,9 +75,9 @@ export default function Home() {
     document.body.removeChild(link);
   };
 
-  // ------------------------------------
+  // ==========================================
   // PAYMENT
-  // ------------------------------------
+  // ==========================================
 
   const handlePayment = async () => {
     if (!selectedPdf) {
@@ -97,9 +97,9 @@ export default function Home() {
     setPdfUrl('');
 
     try {
-      // --------------------------------
+      // ========================================
       // LOAD RAZORPAY
-      // --------------------------------
+      // ========================================
 
       const razorpayLoaded =
         await loadRazorpayScript();
@@ -110,24 +110,27 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
+      // ========================================
       // CREATE ORDER
-      // --------------------------------
+      // ========================================
 
       const orderRes = await fetch(
         '/create-order',
         {
           method: 'POST',
+
           headers: {
             'Content-Type': 'application/json',
           },
+
           body: JSON.stringify({
             pdfId: selectedPdf.id,
           }),
         }
       );
 
-      const orderText = await orderRes.text();
+      const orderText =
+        await orderRes.text();
 
       let orderData = null;
 
@@ -135,7 +138,7 @@ export default function Home() {
         orderData = JSON.parse(orderText);
       } catch {
         console.error(
-          'Create order server response:',
+          'Create order response:',
           orderText
         );
 
@@ -157,9 +160,9 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
+      // ========================================
       // RAZORPAY KEY
-      // --------------------------------
+      // ========================================
 
       const razorpayKey =
         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -170,15 +173,14 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
+      // ========================================
       // RAZORPAY OPTIONS
-      // --------------------------------
+      // ========================================
 
       const options = {
         key: razorpayKey,
 
-        amount:
-          orderData.amount || 9900,
+        amount: orderData.amount,
 
         currency:
           orderData.currency || 'INR',
@@ -202,9 +204,9 @@ export default function Home() {
           color: '#1565c0',
         },
 
-        // --------------------------------
+        // ======================================
         // PAYMENT SUCCESS
-        // --------------------------------
+        // ======================================
 
         handler: async function (response) {
           try {
@@ -212,9 +214,9 @@ export default function Home() {
               return;
             }
 
-            // --------------------------------
+            // ==================================
             // VERIFY PAYMENT
-            // --------------------------------
+            // ==================================
 
             const verifyRes =
               await fetch(
@@ -243,18 +245,18 @@ export default function Home() {
                 }
               );
 
-            // --------------------------------
-            // READ RESPONSE
-            // --------------------------------
+            // ==================================
+            // RESPONSE CONTENT TYPE
+            // ==================================
 
             const contentType =
               verifyRes.headers.get(
                 'content-type'
               ) || '';
 
-            // --------------------------------
-            // JSON RESPONSE
-            // --------------------------------
+            // ==================================
+            // JSON ERROR RESPONSE
+            // ==================================
 
             if (
               contentType.includes(
@@ -271,55 +273,15 @@ export default function Home() {
                 );
               }
 
-              // If backend returns a PDF URL
-              if (data?.pdfUrl) {
-                const fileUrl =
-                  data.pdfUrl.startsWith('http')
-                    ? data.pdfUrl
-                    : window.location.origin +
-                      data.pdfUrl;
-
-                setPdfUrl(fileUrl);
-
-                const originalName =
-                  selectedPdf.file ||
-                  `${selectedPdf.name}.pdf`;
-
-                const dotIndex =
-                  originalName.lastIndexOf('.');
-
-                const baseName =
-                  dotIndex > 0
-                    ? originalName.substring(
-                        0,
-                        dotIndex
-                      )
-                    : originalName;
-
-                const uniqueFileName =
-                  `${baseName}-payment-${response.razorpay_payment_id}.pdf`;
-
-                downloadPdf(
-                  fileUrl,
-                  uniqueFileName
-                );
-
-                setSuccessMessage(
-                  '✅ Payment Successful! Your PDF download has started.'
-                );
-
-                return;
-              }
-
               throw new Error(
                 data?.error ||
-                'PDF URL was not received.'
+                'PDF was not received.'
               );
             }
 
-            // --------------------------------
-            // PDF/BLOB RESPONSE
-            // --------------------------------
+            // ==================================
+            // PDF RESPONSE
+            // ==================================
 
             if (!verifyRes.ok) {
               throw new Error(
@@ -339,9 +301,9 @@ export default function Home() {
               );
             }
 
-            // --------------------------------
-            // CHECK PDF
-            // --------------------------------
+            // ==================================
+            // PDF BLOB
+            // ==================================
 
             const pdfBlob =
               new Blob(
@@ -358,9 +320,9 @@ export default function Home() {
 
             setPdfUrl(url);
 
-            // --------------------------------
+            // ==================================
             // FILE NAME
-            // --------------------------------
+            // ==================================
 
             const originalName =
               selectedPdf.file ||
@@ -380,18 +342,18 @@ export default function Home() {
             const uniqueFileName =
               `${baseName}-payment-${response.razorpay_payment_id}.pdf`;
 
-            // --------------------------------
+            // ==================================
             // DOWNLOAD
-            // --------------------------------
+            // ==================================
 
             downloadPdf(
               url,
               uniqueFileName
             );
 
-            // --------------------------------
+            // ==================================
             // SUCCESS
-            // --------------------------------
+            // ==================================
 
             setSuccessMessage(
               '✅ Payment Successful! Your PDF download has started.'
@@ -417,9 +379,9 @@ export default function Home() {
           }
         },
 
-        // --------------------------------
+        // ======================================
         // PAYMENT WINDOW CLOSED
-        // --------------------------------
+        // ======================================
 
         modal: {
           ondismiss: function () {
@@ -430,16 +392,16 @@ export default function Home() {
         },
       };
 
-      // --------------------------------
+      // ========================================
       // OPEN RAZORPAY
-      // --------------------------------
+      // ========================================
 
       const razorpay =
         new window.Razorpay(options);
 
-      // --------------------------------
+      // ========================================
       // PAYMENT FAILED
-      // --------------------------------
+      // ========================================
 
       razorpay.on(
         'payment.failed',
@@ -486,9 +448,9 @@ export default function Home() {
     }
   };
 
-  // ------------------------------------
+  // ==========================================
   // SEARCH
-  // ------------------------------------
+  // ==========================================
 
   const filteredPdfs =
     pdfs.filter((pdf) =>
@@ -499,9 +461,9 @@ export default function Home() {
         )
     );
 
-  // ------------------------------------
+  // ==========================================
   // PAGE
-  // ------------------------------------
+  // ==========================================
 
   return (
     <main
@@ -512,7 +474,9 @@ export default function Home() {
       }}
     >
 
-      {/* HEADER */}
+      {/* ======================================
+          HEADER
+      ====================================== */}
 
       <header
         style={{
@@ -558,7 +522,9 @@ export default function Home() {
         </div>
       </header>
 
-      {/* MAIN */}
+      {/* ======================================
+          MAIN
+      ====================================== */}
 
       <section
         style={{
@@ -568,7 +534,9 @@ export default function Home() {
         }}
       >
 
-        {/* SUCCESS */}
+        {/* ====================================
+            SUCCESS
+        ==================================== */}
 
         {successMessage && pdfUrl && (
           <div
@@ -612,7 +580,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* INTRO */}
+        {/* ====================================
+            INTRO
+        ==================================== */}
 
         <div
           style={{
@@ -642,11 +612,13 @@ export default function Home() {
             }}
           >
             Select the required PDF, make a secure
-            payment of ₹99, and download your PDF instantly.
+            payment, and download your PDF instantly.
           </p>
         </div>
 
-        {/* SEARCH */}
+        {/* ====================================
+            SEARCH
+        ==================================== */}
 
         <div
           style={{
@@ -691,7 +663,6 @@ export default function Home() {
               position: 'relative',
             }}
           >
-
             <span
               style={{
                 position: 'absolute',
@@ -728,7 +699,6 @@ export default function Home() {
                 color: '#222',
               }}
             />
-
           </div>
 
           {search && (
@@ -747,14 +717,15 @@ export default function Home() {
               found
             </div>
           )}
-
         </div>
 
-        {/* PDF LIST */}
+        {/* ====================================
+            PDF LIST
+        ==================================== */}
 
         <div
           style={{
-            background: 'lightgreen',
+            background: '#e8f5e9',
             borderRadius: '14px',
             padding: '10px',
             marginBottom: '20px',
@@ -862,13 +833,16 @@ export default function Home() {
 
                     </div>
 
+                    {/* DYNAMIC PRICE */}
+
                     <div
                       style={{
                         fontWeight: 'bold',
                         color: '#1565c0',
+                        fontSize: '17px',
                       }}
                     >
-                      ₹99
+                      ₹{pdf.price}
                     </div>
 
                   </div>
@@ -877,10 +851,11 @@ export default function Home() {
               )
             )
           )}
-
         </div>
 
-        {/* SELECTED PDF */}
+        {/* ====================================
+            SELECTED PDF
+        ==================================== */}
 
         {selectedPdf && (
           <div
@@ -914,6 +889,8 @@ export default function Home() {
               {selectedPdf.name}
             </h3>
 
+            {/* DYNAMIC PRICE */}
+
             <div
               style={{
                 fontSize: '24px',
@@ -922,7 +899,7 @@ export default function Home() {
                 marginBottom: '15px',
               }}
             >
-              ₹99
+              ₹{selectedPdf.price}
             </div>
 
             <button
@@ -957,13 +934,15 @@ export default function Home() {
             >
               {loading
                 ? '⏳ Processing Payment...'
-                : '💳 Pay ₹99 & Download PDF'}
+                : `💳 Pay ₹${selectedPdf.price} & Download PDF`}
             </button>
 
           </div>
         )}
 
-        {/* ABOUT */}
+        {/* ====================================
+            ABOUT
+        ==================================== */}
 
         <div
           style={{
@@ -1010,7 +989,9 @@ export default function Home() {
 
         </div>
 
-        {/* SERVICES */}
+        {/* ====================================
+            SERVICES
+        ==================================== */}
 
         <div
           style={{
@@ -1048,7 +1029,9 @@ export default function Home() {
 
         </div>
 
-        {/* HOW IT WORKS */}
+        {/* ====================================
+            HOW IT WORKS
+        ==================================== */}
 
         <div
           style={{
@@ -1096,7 +1079,9 @@ export default function Home() {
 
         </div>
 
-        {/* PAYMENT & DELIVERY */}
+        {/* ====================================
+            PAYMENT & DELIVERY
+        ==================================== */}
 
         <div
           style={{
@@ -1152,7 +1137,9 @@ export default function Home() {
 
         </div>
 
-        {/* SHIPPING */}
+        {/* ====================================
+            SHIPPING POLICY
+        ==================================== */}
 
         <div
           style={{
@@ -1209,7 +1196,9 @@ export default function Home() {
 
         </div>
 
-        {/* ADDRESS */}
+        {/* ====================================
+            BUSINESS ADDRESS
+        ==================================== */}
 
         <div
           style={{
@@ -1254,7 +1243,9 @@ export default function Home() {
 
         </div>
 
-        {/* CONTACT */}
+        {/* ====================================
+            CONTACT
+        ==================================== */}
 
         <div
           style={{
@@ -1286,18 +1277,34 @@ export default function Home() {
             please contact us.
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Business Name:</strong>{' '}
             SR E-Print Online
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Contact Person:</strong>{' '}
             Gs Raju
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Email:</strong>{' '}
+
             <a
               href="mailto:sronline99890@gmail.com"
               style={{
@@ -1309,8 +1316,14 @@ export default function Home() {
             </a>
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Phone / WhatsApp:</strong>{' '}
+
             <a
               href="tel:+919989057683"
               style={{
@@ -1322,14 +1335,21 @@ export default function Home() {
             </a>
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Business Hours:</strong>{' '}
             Monday to Saturday, 9:00 AM to 6:00 PM
           </p>
 
         </div>
 
-        {/* FOOTER */}
+        {/* ====================================
+            FOOTER
+        ==================================== */}
 
         <footer
           style={{
@@ -1402,7 +1422,9 @@ export default function Home() {
 
       </section>
 
-      {/* WHATSAPP */}
+      {/* ======================================
+          WHATSAPP
+      ====================================== */}
 
       <a
         href="https://wa.me/919989057683?text=Hello%20SR%20E-Print%20Online,%20I%20need%20help%20regarding%20a%20PDF%20purchase."
