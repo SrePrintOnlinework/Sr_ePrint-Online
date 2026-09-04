@@ -4,6 +4,9 @@ import fs from 'fs';
 import path from 'path';
 import { pdfs } from '../pdfs';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -15,9 +18,9 @@ export async function POST(request) {
       pdfId,
     } = body;
 
-    // -----------------------------
-    // CHECK REQUIRED DATA
-    // -----------------------------
+    // ==============================
+    // CHECK PAYMENT DATA
+    // ==============================
 
     if (
       !razorpay_order_id ||
@@ -34,9 +37,9 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------
+    // ==============================
     // RAZORPAY SECRET
-    // -----------------------------
+    // ==============================
 
     const secret =
       process.env.RAZORPAY_KEY_SECRET;
@@ -55,17 +58,15 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------
-    // VERIFY SIGNATURE
-    // -----------------------------
+    // ==============================
+    // VERIFY RAZORPAY SIGNATURE
+    // ==============================
 
     const generatedSignature =
       crypto
         .createHmac('sha256', secret)
         .update(
-          razorpay_order_id +
-            '|' +
-            razorpay_payment_id
+          `${razorpay_order_id}|${razorpay_payment_id}`
         )
         .digest('hex');
 
@@ -86,37 +87,66 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------
+    console.log(
+      'Payment signature verified successfully.'
+    );
+
+    // ==============================
     // FIND PDF
-    // -----------------------------
+    // ==============================
 
     const selectedPdf =
       pdfs.find(
         (pdf) =>
-          String(pdf.id) === String(pdfId)
+          String(pdf.id) ===
+          String(pdfId)
       );
 
     if (!selectedPdf) {
       console.error(
-        'PDF not found:',
+        'PDF not found in pdfs.js:',
         pdfId
       );
 
       return NextResponse.json(
         {
           error:
-            'Selected PDF was not found.',
+            `Selected PDF was not found. PDF ID: ${pdfId}`,
         },
         { status: 404 }
       );
     }
 
-    // -----------------------------
-    // PDF FILE PATH
-    // -----------------------------
+    console.log(
+      'Selected PDF:',
+      selectedPdf
+    );
+
+    // ==============================
+    // CHECK FILE NAME
+    // ==============================
 
     const fileName =
       selectedPdf.file;
+
+    if (!fileName) {
+      console.error(
+        'PDF file name is missing:',
+        selectedPdf
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            'PDF file name is missing in pdfs.js.',
+        },
+        { status: 500 }
+      );
+    }
+
+    // ==============================
+    // FILE PATH
+    // ==============================
 
     const filePath =
       path.join(
@@ -126,13 +156,13 @@ export async function POST(request) {
       );
 
     console.log(
-      'PDF path:',
+      'PDF file path:',
       filePath
     );
 
-    // -----------------------------
-    // CHECK FILE EXISTS
-    // -----------------------------
+    // ==============================
+    // CHECK FILE
+    // ==============================
 
     if (
       !fs.existsSync(filePath)
@@ -145,15 +175,15 @@ export async function POST(request) {
       return NextResponse.json(
         {
           error:
-            'PDF file is not available on the server.',
+            `PDF file not found on server: ${fileName}`,
         },
         { status: 404 }
       );
     }
 
-    // -----------------------------
+    // ==============================
     // READ PDF
-    // -----------------------------
+    // ==============================
 
     const fileBuffer =
       fs.readFileSync(filePath);
@@ -162,6 +192,11 @@ export async function POST(request) {
       !fileBuffer ||
       fileBuffer.length === 0
     ) {
+      console.error(
+        'PDF file is empty:',
+        filePath
+      );
+
       return NextResponse.json(
         {
           error:
@@ -171,9 +206,13 @@ export async function POST(request) {
       );
     }
 
-    // -----------------------------
+    console.log(
+      `PDF loaded successfully. Size: ${fileBuffer.length} bytes`
+    );
+
+    // ==============================
     // RETURN PDF
-    // -----------------------------
+    // ==============================
 
     return new NextResponse(
       fileBuffer,
@@ -191,7 +230,13 @@ export async function POST(request) {
             String(fileBuffer.length),
 
           'Cache-Control':
-            'no-store, no-cache, must-revalidate',
+            'no-store, no-cache, must-revalidate, proxy-revalidate',
+
+          Pragma:
+            'no-cache',
+
+          Expires:
+            '0',
         },
       }
     );
@@ -205,6 +250,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         error:
+          error?.message ||
           'Payment verification or PDF delivery failed.',
       },
       { status: 500 }
