@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { pdfs } from '../../pdfs';
+import { pdfs } from '../pdfs';
 
 export async function POST(request) {
   try {
