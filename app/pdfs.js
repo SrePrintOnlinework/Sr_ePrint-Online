@@ -1,17 +1,26 @@
 export const pdfs = [
   {
-    id: 'birth-001',
-    name: 'Birth Application',
-    file: 'birth-application.pdf',
+    id: 'raj-001',
+    name: 'Birth-appli',
+    file: 'birth-appli.pdf',
+    price: 99,
   },
   {
-    id: 'sample-001',
-    name: 'Sample PDF',
+    id: 'raj-002',
+    name: 'Sample1',
     file: 'sample1.pdf',
+    price: 20,
   },
   {
-    id: 'newdoc-003',
-    name: 'New Document',
-    file: 'newdoc08112026.pdf',
+    id: 'raj-003',
+    name: 'newdoc',
+    file: 'newdoc.pdf',
+    price: 99,
+  },
+  {
+    id: 'raj-003',
+    name: 'TSMSIDC',
+    file: 'TSMSIDC.pdf',
+    price: 99,
   },
 ];
