@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    const body =
+      await request.json();
 
     const {
       razorpay_order_id,
@@ -18,9 +19,9 @@ export async function POST(request) {
       pdfId,
     } = body;
 
-    // ==============================
+    // ==========================================
     // CHECK PAYMENT DATA
-    // ==============================
+    // ==========================================
 
     if (
       !razorpay_order_id ||
@@ -37,16 +38,16 @@ export async function POST(request) {
       );
     }
 
-    // ==============================
+    // ==========================================
     // RAZORPAY SECRET
-    // ==============================
+    // ==========================================
 
     const secret =
       process.env.RAZORPAY_KEY_SECRET;
 
     if (!secret) {
       console.error(
-        'RAZORPAY_KEY_SECRET is missing'
+        'RAZORPAY_KEY_SECRET is missing.'
       );
 
       return NextResponse.json(
@@ -58,24 +59,53 @@ export async function POST(request) {
       );
     }
 
-    // ==============================
-    // VERIFY RAZORPAY SIGNATURE
-    // ==============================
+    // ==========================================
+    // VERIFY SIGNATURE
+    // ==========================================
 
     const generatedSignature =
       crypto
-        .createHmac('sha256', secret)
+        .createHmac(
+          'sha256',
+          secret
+        )
         .update(
           `${razorpay_order_id}|${razorpay_payment_id}`
         )
         .digest('hex');
 
-    if (
-      generatedSignature !==
-      razorpay_signature
-    ) {
+    let signatureValid = false;
+
+    try {
+      const generatedBuffer =
+        Buffer.from(
+          generatedSignature,
+          'hex'
+        );
+
+      const receivedBuffer =
+        Buffer.from(
+          razorpay_signature,
+          'hex'
+        );
+
+      if (
+        generatedBuffer.length ===
+        receivedBuffer.length
+      ) {
+        signatureValid =
+          crypto.timingSafeEqual(
+            generatedBuffer,
+            receivedBuffer
+          );
+      }
+    } catch (error) {
+      signatureValid = false;
+    }
+
+    if (!signatureValid) {
       console.error(
-        'Invalid Razorpay signature'
+        'Invalid Razorpay signature.'
       );
 
       return NextResponse.json(
@@ -88,12 +118,12 @@ export async function POST(request) {
     }
 
     console.log(
-      'Payment signature verified successfully.'
+      'Razorpay signature verified successfully.'
     );
 
-    // ==============================
+    // ==========================================
     // FIND PDF
-    // ==============================
+    // ==========================================
 
     const selectedPdf =
       pdfs.find(
@@ -104,7 +134,7 @@ export async function POST(request) {
 
     if (!selectedPdf) {
       console.error(
-        'PDF not found in pdfs.js:',
+        'PDF not found:',
         pdfId
       );
 
@@ -117,14 +147,9 @@ export async function POST(request) {
       );
     }
 
-    console.log(
-      'Selected PDF:',
-      selectedPdf
-    );
-
-    // ==============================
-    // CHECK FILE NAME
-    // ==============================
+    // ==========================================
+    // FILE NAME
+    // ==========================================
 
     const fileName =
       selectedPdf.file;
@@ -144,25 +169,53 @@ export async function POST(request) {
       );
     }
 
-    // ==============================
-    // FILE PATH
-    // ==============================
+    // ==========================================
+    // SECURITY CHECK
+    // ==========================================
+
+    if (
+      fileName.includes('..') ||
+      fileName.includes('\\') ||
+      path.isAbsolute(fileName)
+    ) {
+      console.error(
+        'Invalid PDF file path:',
+        fileName
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            'Invalid PDF file path.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // ==========================================
+    // PUBLIC DIRECTORY
+    // ==========================================
+
+    const publicDirectory =
+      path.join(
+        process.cwd(),
+        'public'
+      );
 
     const filePath =
       path.join(
-        process.cwd(),
-        'public',
+        publicDirectory,
         fileName
       );
 
     console.log(
-      'PDF file path:',
+      'PDF path:',
       filePath
     );
 
-    // ==============================
+    // ==========================================
     // CHECK FILE
-    // ==============================
+    // ==========================================
 
     if (
       !fs.existsSync(filePath)
@@ -181,9 +234,9 @@ export async function POST(request) {
       );
     }
 
-    // ==============================
+    // ==========================================
     // READ PDF
-    // ==============================
+    // ==========================================
 
     const fileBuffer =
       fs.readFileSync(filePath);
@@ -206,13 +259,9 @@ export async function POST(request) {
       );
     }
 
-    console.log(
-      `PDF loaded successfully. Size: ${fileBuffer.length} bytes`
-    );
-
-    // ==============================
+    // ==========================================
     // RETURN PDF
-    // ==============================
+    // ==========================================
 
     return new NextResponse(
       fileBuffer,
