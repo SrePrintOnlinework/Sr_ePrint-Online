@@ -18,10 +18,6 @@ export async function POST(request) {
       pdfId,
     } = body;
 
-    // ==========================================
-    // CHECK PAYMENT DATA
-    // ==========================================
-
     if (
       !razorpay_order_id ||
       !razorpay_payment_id ||
@@ -30,485 +26,335 @@ export async function POST(request) {
     ) {
       return NextResponse.json(
         {
-          error:
-            'Required payment information is missing.',
+          success: false,
+          error: 'Missing payment verification details.',
         },
         { status: 400 }
       );
     }
 
-    // ==========================================
-    // RAZORPAY SECRET
-    // ==========================================
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    const secret =
-      process.env.RAZORPAY_KEY_SECRET;
-
-    const keyId =
-      process.env.RAZORPAY_KEY_ID;
-
-    if (!secret || !keyId) {
-      console.error(
-        'Razorpay environment variables are missing.'
-      );
-
+    if (!keyId || !keySecret) {
       return NextResponse.json(
         {
-          error:
-            'Payment configuration error.',
+          success: false,
+          error: 'Razorpay server configuration is missing.',
         },
         { status: 500 }
       );
     }
 
-    // ==========================================
-    // FIND PDF
-    // ==========================================
-
+    // --------------------------------------------------
+    // 1. Find selected PDF
+    // --------------------------------------------------
     const selectedPdf = pdfs.find(
-      (pdf) =>
-        String(pdf.id) === String(pdfId)
+      (pdf) => String(pdf.id) === String(pdfId)
     );
 
     if (!selectedPdf) {
       return NextResponse.json(
         {
-          error:
-            'Selected PDF was not found.',
+          success: false,
+          error: 'PDF not found.',
         },
         { status: 404 }
       );
     }
 
-    // ==========================================
-    // VERIFY RAZORPAY SIGNATURE
-    // ==========================================
+    const price = Number(selectedPdf.price);
 
-    const generatedSignature =
-      crypto
-        .createHmac('sha256', secret)
-        .update(
-          `${razorpay_order_id}|${razorpay_payment_id}`
-        )
-        .digest('hex');
-
-    const receivedBuffer =
-      Buffer.from(
-        razorpay_signature,
-        'hex'
-      );
-
-    const generatedBuffer =
-      Buffer.from(
-        generatedSignature,
-        'hex'
-      );
-
-    let signatureValid = false;
-
-    if (
-      receivedBuffer.length ===
-      generatedBuffer.length
-    ) {
-      signatureValid =
-        crypto.timingSafeEqual(
-          generatedBuffer,
-          receivedBuffer
-        );
-    }
-
-    if (!signatureValid) {
-      console.error(
-        'Invalid Razorpay signature.'
-      );
-
+    if (!Number.isFinite(price) || price <= 0) {
       return NextResponse.json(
         {
-          error:
-            'Payment verification failed.',
+          success: false,
+          error: 'Invalid PDF price.',
         },
-        { status: 400 }
+        { status: 500 }
       );
     }
 
-    console.log(
-      'Razorpay signature verified:',
-      razorpay_payment_id
+    const expectedAmount = Math.round(price * 100);
+
+    // --------------------------------------------------
+    // 2. Verify Razorpay signature
+    // --------------------------------------------------
+    const generatedSignature = crypto
+      .createHmac('sha256', keySecret)
+      .update(
+        `${razorpay_order_id}|${razorpay_payment_id}`
+      )
+      .digest('hex');
+
+    const signaturesMatch = crypto.timingSafeEqual(
+      Buffer.from(generatedSignature, 'utf8'),
+      Buffer.from(razorpay_signature, 'utf8')
     );
 
-    // ==========================================
-    // VERIFY ORDER WITH RAZORPAY
-    // ==========================================
+    if (!signaturesMatch) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid Razorpay payment signature.',
+        },
+        { status: 400 }
+      );
+    }
 
+    // --------------------------------------------------
+    // Razorpay Basic Authentication
+    // --------------------------------------------------
     const auth = Buffer.from(
-      `${keyId}:${secret}`
+      `${keyId}:${keySecret}`
     ).toString('base64');
 
-    const orderResponse =
-      await fetch(
-        `https://api.razorpay.com/v1/orders/${razorpay_order_id}`,
+    const headers = {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
+    };
+
+    // --------------------------------------------------
+    // 3. Fetch Razorpay Order
+    // --------------------------------------------------
+    const orderResponse = await fetch(
+      `https://api.razorpay.com/v1/orders/${encodeURIComponent(
+        razorpay_order_id
+      )}`,
+      {
+        method: 'GET',
+        headers,
+        cache: 'no-store',
+      }
+    );
+
+    const orderText = await orderResponse.text();
+
+    let orderData;
+
+    try {
+      orderData = JSON.parse(orderText);
+    } catch {
+      return NextResponse.json(
         {
-          method: 'GET',
-
-          headers: {
-            Authorization:
-              `Basic ${auth}`,
-          },
-
-          cache: 'no-store',
-        }
+          success: false,
+          error: 'Unable to verify Razorpay order.',
+        },
+        { status: 502 }
       );
-
-    const orderData =
-      await orderResponse.json();
+    }
 
     if (!orderResponse.ok) {
-      console.error(
-        'Unable to fetch Razorpay order:',
-        orderData
-      );
-
       return NextResponse.json(
         {
+          success: false,
           error:
-            'Unable to verify Razorpay order.',
+            orderData?.error?.description ||
+            'Razorpay order verification failed.',
         },
         { status: 400 }
       );
     }
 
-    // ==========================================
-    // CHECK ORDER PDF ID
-    // ==========================================
-
-    const orderPdfId =
-      orderData?.notes?.pdfId;
+    // --------------------------------------------------
+    // 4. Verify PDF ID from order notes
+    // --------------------------------------------------
+    const orderPdfId = orderData?.notes?.pdfId;
 
     if (
-      String(orderPdfId) !==
-      String(selectedPdf.id)
+      orderPdfId &&
+      String(orderPdfId) !== String(selectedPdf.id)
     ) {
-      console.error(
-        'PDF ID mismatch.',
-        {
-          orderPdfId,
-          requestedPdfId: selectedPdf.id,
-        }
-      );
-
       return NextResponse.json(
         {
-          error:
-            'Payment order does not match the selected PDF.',
+          success: false,
+          error: 'PDF does not match the Razorpay order.',
         },
         { status: 400 }
       );
     }
 
-    // ==========================================
-    // CHECK ORDER AMOUNT
-    // ==========================================
-
-    const expectedAmount =
-      Math.round(
-        Number(selectedPdf.price) * 100
-      );
-
-    const orderAmount =
-      Number(orderData?.amount);
-
-    if (
-      !Number.isFinite(orderAmount) ||
-      orderAmount !== expectedAmount
-    ) {
-      console.error(
-        'Order amount mismatch.',
-        {
-          orderAmount,
-          expectedAmount,
-        }
-      );
-
+    // --------------------------------------------------
+    // 5. Verify order amount
+    // --------------------------------------------------
+    if (Number(orderData?.amount) !== expectedAmount) {
       return NextResponse.json(
         {
-          error:
-            'Payment amount does not match the selected PDF price.',
+          success: false,
+          error: 'Payment amount does not match the PDF price.',
         },
         { status: 400 }
       );
     }
 
-    // ==========================================
-    // CHECK ORDER STATUS
-    // ==========================================
+    // IMPORTANT:
+    // Do NOT reject the order because status is "paid".
+    // Razorpay can change order status from "created"
+    // to "paid" after successful payment.
 
-    if (
-      orderData?.status !== 'created'
-    ) {
-      console.error(
-        'Invalid Razorpay order status:',
-        orderData?.status
-      );
+    // --------------------------------------------------
+    // 6. Fetch Razorpay Payment
+    // --------------------------------------------------
+    const paymentResponse = await fetch(
+      `https://api.razorpay.com/v1/payments/${encodeURIComponent(
+        razorpay_payment_id
+      )}`,
+      {
+        method: 'GET',
+        headers,
+        cache: 'no-store',
+      }
+    );
 
+    const paymentText = await paymentResponse.text();
+
+    let paymentData;
+
+    try {
+      paymentData = JSON.parse(paymentText);
+    } catch {
       return NextResponse.json(
         {
-          error:
-            'Invalid Razorpay order.',
+          success: false,
+          error: 'Unable to verify Razorpay payment.',
         },
-        { status: 400 }
+        { status: 502 }
       );
     }
-
-    // ==========================================
-    // VERIFY PAYMENT DETAILS
-    // ==========================================
-
-    const paymentResponse =
-      await fetch(
-        `https://api.razorpay.com/v1/payments/${razorpay_payment_id}`,
-        {
-          method: 'GET',
-
-          headers: {
-            Authorization:
-              `Basic ${auth}`,
-          },
-
-          cache: 'no-store',
-        }
-      );
-
-    const paymentData =
-      await paymentResponse.json();
 
     if (!paymentResponse.ok) {
-      console.error(
-        'Unable to fetch payment:',
-        paymentData
-      );
-
       return NextResponse.json(
         {
+          success: false,
           error:
-            'Unable to verify payment details.',
+            paymentData?.error?.description ||
+            'Razorpay payment verification failed.',
         },
         { status: 400 }
       );
     }
 
-    // ==========================================
-    // CHECK PAYMENT ORDER ID
-    // ==========================================
-
+    // --------------------------------------------------
+    // 7. Verify payment belongs to this order
+    // --------------------------------------------------
     if (
       String(paymentData?.order_id) !==
       String(razorpay_order_id)
     ) {
-      console.error(
-        'Payment Order ID mismatch.'
-      );
-
       return NextResponse.json(
         {
-          error:
-            'Payment does not belong to this order.',
+          success: false,
+          error: 'Payment does not belong to this order.',
         },
         { status: 400 }
       );
     }
 
-    // ==========================================
-    // CHECK PAYMENT AMOUNT
-    // ==========================================
+    // --------------------------------------------------
+    // 8. Verify payment amount
+    // --------------------------------------------------
+    if (Number(paymentData?.amount) !== expectedAmount) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Payment amount is incorrect.',
+        },
+        { status: 400 }
+      );
+    }
 
-    const paymentAmount =
-      Number(paymentData?.amount);
+    // --------------------------------------------------
+    // 9. Verify captured payment
+    // --------------------------------------------------
+    if (paymentData?.status !== 'captured') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Payment is not captured. Current status: ${paymentData?.status}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // --------------------------------------------------
+    // 10. Validate PDF filename
+    // --------------------------------------------------
+    const fileName = String(selectedPdf.file || '');
 
     if (
-      paymentAmount !==
-      expectedAmount
+      !fileName ||
+      !fileName.toLowerCase().endsWith('.pdf') ||
+      fileName.includes('..') ||
+      fileName.includes('/') ||
+      fileName.includes('\\') ||
+      path.isAbsolute(fileName)
     ) {
-      console.error(
-        'Payment amount mismatch.',
-        {
-          paymentAmount,
-          expectedAmount,
-        }
-      );
-
       return NextResponse.json(
         {
-          error:
-            'Payment amount does not match PDF price.',
+          success: false,
+          error: 'Invalid PDF file.',
         },
         { status: 400 }
       );
     }
 
-    // ==========================================
-    // CHECK PAYMENT STATUS
-    // ==========================================
-
-    if (
-      paymentData?.status !== 'captured'
-    ) {
-      console.error(
-        'Payment is not captured:',
-        paymentData?.status
-      );
-
-      return NextResponse.json(
-        {
-          error:
-            'Payment has not been captured yet.',
-        },
-        { status: 400 }
-      );
-    }
-
-    console.log(
-      'Payment verified and captured:',
-      razorpay_payment_id
+    // --------------------------------------------------
+    // 11. Find PDF inside /public
+    // --------------------------------------------------
+    const publicDirectory = path.join(
+      process.cwd(),
+      'public'
     );
 
-    // ==========================================
-    // FILE NAME
-    // ==========================================
+    const pdfPath = path.join(
+      publicDirectory,
+      fileName
+    );
 
-    const fileName =
-      selectedPdf.file;
-
-    if (!fileName) {
+    if (!fs.existsSync(pdfPath)) {
       return NextResponse.json(
         {
-          error:
-            'PDF file name is missing in pdfs.js.',
-        },
-        { status: 500 }
-      );
-    }
-
-    // ==========================================
-    // SECURITY CHECK
-    // ==========================================
-
-    if (
-      fileName.includes('..') ||
-      fileName.includes('\\') ||
-      path.isAbsolute(fileName) ||
-      !fileName.toLowerCase().endsWith('.pdf')
-    ) {
-      console.error(
-        'Invalid PDF file path:',
-        fileName
-      );
-
-      return NextResponse.json(
-        {
-          error:
-            'Invalid PDF file path.',
-        },
-        { status: 400 }
-      );
-    }
-
-    // ==========================================
-    // PUBLIC DIRECTORY
-    // ==========================================
-
-    const publicDirectory =
-      path.join(
-        process.cwd(),
-        'public'
-      );
-
-    const filePath =
-      path.join(
-        publicDirectory,
-        fileName
-      );
-
-    // ==========================================
-    // CHECK FILE
-    // ==========================================
-
-    if (
-      !fs.existsSync(filePath)
-    ) {
-      console.error(
-        'PDF file does not exist:',
-        filePath
-      );
-
-      return NextResponse.json(
-        {
-          error:
-            `PDF file not found on server: ${fileName}`,
+          success: false,
+          error: `PDF file not found: ${fileName}`,
         },
         { status: 404 }
       );
     }
 
-    // ==========================================
-    // READ PDF
-    // ==========================================
+    const fileBuffer = fs.readFileSync(pdfPath);
 
-    const fileBuffer =
-      fs.readFileSync(filePath);
-
-    if (
-      !fileBuffer ||
-      fileBuffer.length === 0
-    ) {
+    if (!fileBuffer || fileBuffer.length === 0) {
       return NextResponse.json(
         {
-          error:
-            'PDF file is empty.',
+          success: false,
+          error: 'PDF file is empty.',
         },
         { status: 500 }
       );
     }
 
-    // ==========================================
-    // RETURN PDF
-    // ==========================================
-
-    return new NextResponse(
-      fileBuffer,
-      {
-        status: 200,
-
-        headers: {
-          'Content-Type':
-            'application/pdf',
-
-          'Content-Disposition':
-            `attachment; filename="${fileName}"`,
-
-          'Content-Length':
-            String(fileBuffer.length),
-
-          'Cache-Control':
-            'no-store, no-cache, must-revalidate, proxy-revalidate',
-
-          Pragma: 'no-cache',
-
-          Expires: '0',
-        },
-      }
-    );
-
+    // --------------------------------------------------
+    // 12. Send PDF to browser
+    // --------------------------------------------------
+    return new NextResponse(fileBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': String(fileBuffer.length),
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        Pragma: 'no-cache',
+      },
+    });
   } catch (error) {
-    console.error(
-      'VERIFY PAYMENT ERROR:',
-      error
-    );
+    console.error('VERIFY PAYMENT ERROR:', error);
 
     return NextResponse.json(
       {
+        success: false,
         error:
           error?.message ||
-          'Payment verification or PDF delivery failed.',
+          'Payment verification failed.',
       },
       { status: 500 }
     );
