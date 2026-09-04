@@ -6,8 +6,11 @@ export const runtime = 'nodejs';
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    // ==========================================
+    // READ REQUEST
+    // ==========================================
 
+    const body = await request.json();
     const pdfId = body?.pdfId;
 
     // ==========================================
@@ -19,12 +22,14 @@ export async function POST(request) {
         {
           error: 'PDF ID is required.',
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
     // ==========================================
-    // FIND PDF
+    // FIND PDF FROM SERVER-SIDE pdfs.js
     // ==========================================
 
     const selectedPdf = pdfs.find(
@@ -36,7 +41,51 @@ export async function POST(request) {
         {
           error: 'Selected PDF not found.',
         },
-        { status: 404 }
+        {
+          status: 404,
+        }
+      );
+    }
+
+    // ==========================================
+    // CHECK PDF FILE NAME
+    // ==========================================
+
+    if (!selectedPdf.file) {
+      console.error(
+        'PDF file name is missing:',
+        selectedPdf
+      );
+
+      return NextResponse.json(
+        {
+          error: 'PDF file configuration is missing.',
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    // ==========================================
+    // CHECK PDF PRICE
+    // ==========================================
+
+    const price = Number(selectedPdf.price);
+
+    if (!Number.isFinite(price) || price <= 0) {
+      console.error(
+        'Invalid PDF price:',
+        selectedPdf
+      );
+
+      return NextResponse.json(
+        {
+          error: 'Invalid PDF price configuration.',
+        },
+        {
+          status: 500,
+        }
       );
     }
 
@@ -55,35 +104,25 @@ export async function POST(request) {
       return NextResponse.json(
         {
           error:
-            'Razorpay payment configuration is missing.',
+            'Razorpay payment configuration is missing. Please check Vercel Environment Variables.',
         },
-        { status: 500 }
-      );
-    }
-
-    // ==========================================
-    // PRICE
-    // ==========================================
-
-    const price = Number(selectedPdf.price);
-
-    if (!Number.isFinite(price) || price <= 0) {
-      return NextResponse.json(
         {
-          error: 'Invalid PDF price configuration.',
-        },
-        { status: 500 }
+          status: 500,
+        }
       );
     }
 
-    // Convert INR to paise
-    // ₹99 = 9900
-    // ₹20 = 2000
+    // ==========================================
+    // CONVERT INR TO PAISE
+    // ==========================================
+
+    // ₹99 = 9900 paise
+    // ₹20 = 2000 paise
 
     const amount = Math.round(price * 100);
 
     // ==========================================
-    // RAZORPAY BASIC AUTH
+    // CREATE BASIC AUTH
     // ==========================================
 
     const auth = Buffer.from(
@@ -105,15 +144,15 @@ export async function POST(request) {
         },
 
         body: JSON.stringify({
-          amount,
+          amount: amount,
           currency: 'INR',
 
-          receipt:
-            `pdf_${selectedPdf.id}_${Date.now()}`,
+          receipt: `pdf_${selectedPdf.id}_${Date.now()}`,
 
           notes: {
             pdfId: String(selectedPdf.id),
             pdfName: String(selectedPdf.name || ''),
+            pdfFile: String(selectedPdf.file),
             price: String(price),
           },
         }),
@@ -122,10 +161,35 @@ export async function POST(request) {
       }
     );
 
-    const data = await response.json();
+    // ==========================================
+    // READ RAZORPAY RESPONSE
+    // ==========================================
+
+    const responseText = await response.text();
+
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (jsonError) {
+      console.error(
+        'Invalid Razorpay response:',
+        responseText
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            'Invalid response received from Razorpay.',
+        },
+        {
+          status: 502,
+        }
+      );
+    }
 
     // ==========================================
-    // RAZORPAY ERROR
+    // CHECK RAZORPAY ERROR
     // ==========================================
 
     if (!response.ok) {
@@ -138,14 +202,17 @@ export async function POST(request) {
         {
           error:
             data?.error?.description ||
+            data?.error?.reason ||
             'Failed to create Razorpay order.',
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
     // ==========================================
-    // CHECK ORDER ID
+    // CHECK RAZORPAY ORDER ID
     // ==========================================
 
     if (!data?.id) {
@@ -159,35 +226,146 @@ export async function POST(request) {
           error:
             'Razorpay Order ID was not received.',
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
 
+    // ==========================================
+    // VERIFY RAZORPAY AMOUNT
+    // ==========================================
+
+    if (Number(data.amount) !== amount) {
+      console.error(
+        'Razorpay amount mismatch:',
+        {
+          expected: amount,
+          received: data.amount,
+        }
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            'Razorpay payment amount verification failed.',
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    // ==========================================
+    // VERIFY CURRENCY
+    // ==========================================
+
+    if (data.currency !== 'INR') {
+      console.error(
+        'Unexpected Razorpay currency:',
+        data.currency
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            'Unexpected payment currency received from Razorpay.',
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    // ==========================================
+    // LOG SUCCESS
+    // ==========================================
+
     console.log(
-      'Razorpay order created:',
+      '=========================================='
+    );
+
+    console.log(
+      'RAZORPAY ORDER CREATED SUCCESSFULLY'
+    );
+
+    console.log(
+      'Order ID:',
       data.id
     );
 
+    console.log(
+      'PDF ID:',
+      selectedPdf.id
+    );
+
+    console.log(
+      'PDF Name:',
+      selectedPdf.name
+    );
+
+    console.log(
+      'PDF File:',
+      selectedPdf.file
+    );
+
+    console.log(
+      'Price:',
+      price
+    );
+
+    console.log(
+      'Amount:',
+      amount
+    );
+
+    console.log(
+      '=========================================='
+    );
+
     // ==========================================
-    // SUCCESS
+    // SEND ORDER DETAILS TO CLIENT
     // ==========================================
 
     return NextResponse.json(
       {
+        success: true,
+
         orderId: data.id,
+
         amount: data.amount,
+
         currency: data.currency,
+
         pdfId: String(selectedPdf.id),
-        pdfName: selectedPdf.name,
-        price,
+
+        pdfName: String(
+          selectedPdf.name || ''
+        ),
+
+        price: price,
       },
-      { status: 200 }
+      {
+        status: 200,
+      }
     );
 
   } catch (error) {
+    // ==========================================
+    // SERVER ERROR
+    // ==========================================
+
+    console.error(
+      '=========================================='
+    );
+
     console.error(
       'CREATE ORDER ERROR:',
       error
+    );
+
+    console.error(
+      '=========================================='
     );
 
     return NextResponse.json(
@@ -196,7 +374,9 @@ export async function POST(request) {
           error?.message ||
           'Something went wrong while creating the payment order.',
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
