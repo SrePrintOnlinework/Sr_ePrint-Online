@@ -638,12 +638,12 @@ export default function Home() {
                 left: '15px',
                 top: '100%',
                 transform:
-                  'translateY(-100%)',
+                  'translateY(-50%)',
                 fontSize: '20px',
                 pointerEvents: 'none',
               }}
             >
-              
+              🔍
             </span>
 
             <input
@@ -654,7 +654,7 @@ export default function Home() {
                 setSearch(e.target.value)
               }
               style={{
-                width: '100%',
+                width: '80%',
                 boxSizing: 'border-box',
                 padding:
                   '15px 15px 15px 47px',
@@ -1273,16 +1273,23 @@ export default function Home() {
 
             <br />
 
-            New Maa Mart backside, Kurnool Road
+            New Maa Mart backside
 
             <br />
 
-            Ieeja, Jogulamba Gadwal District
+            Kurnool Road
 
             <br />
 
-            Telangana - 509127, 
-           India
+            Ieeja, Jogulamba Gadwal
+
+            <br />
+
+            Telangana - 509127
+
+            <br />
+
+            India
 
           </p>
 
