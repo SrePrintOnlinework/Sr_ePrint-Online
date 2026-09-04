@@ -19,8 +19,8 @@ export const pdfs = [
   },
   {
     id: 'raj-004',
-    name: 'TSMSIDC',
-    file: 'TSMSIDC.pdf',
-    price: 99,
+    name: 'tsmsidc',
+    file: 'tsmsidc.pdf',
+    price: 20,
   },
 ];
