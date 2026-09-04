@@ -55,15 +55,13 @@ export default function Home() {
 
     setLoading(true);
 
-    // Clear old success state
+    // IMPORTANT:
+    // Clear old success state before starting payment
     setSuccessMessage('');
     setPdfUrl('');
 
     try {
-      // --------------------------------
       // LOAD RAZORPAY
-      // --------------------------------
-
       const razorpayLoaded =
         await loadRazorpayScript();
 
@@ -73,10 +71,7 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
       // CREATE ORDER
-      // --------------------------------
-
       const orderRes = await fetch(
         '/create-order',
         {
@@ -113,10 +108,7 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
       // RAZORPAY PUBLIC KEY
-      // --------------------------------
-
       const razorpayKey =
         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
@@ -126,16 +118,15 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
+      // ------------------------------------
       // RAZORPAY OPTIONS
-      // --------------------------------
+      // ------------------------------------
 
       const options = {
         key: razorpayKey,
 
-        // IMPORTANT:
-        // Amount comes from server order
-        amount: orderData.amount,
+        amount:
+          orderData.amount || 9900,
 
         currency:
           orderData.currency || 'INR',
@@ -159,10 +150,7 @@ export default function Home() {
               return;
             }
 
-            // --------------------------------
             // VERIFY PAYMENT
-            // --------------------------------
-
             const verifyRes =
               await fetch(
                 '/verify-payment',
@@ -211,10 +199,7 @@ export default function Home() {
               );
             }
 
-            // --------------------------------
             // GET PDF
-            // --------------------------------
-
             const blob =
               await verifyRes.blob();
 
@@ -231,8 +216,7 @@ export default function Home() {
             // PREVENT DUPLICATE DOWNLOAD
             // --------------------------------
 
-            downloadStartedRef.current =
-              true;
+            downloadStartedRef.current = true;
 
             // --------------------------------
             // CREATE PDF URL
@@ -307,7 +291,7 @@ export default function Home() {
             // --------------------------------
 
             setSuccessMessage(
-              `✅ Payment Successful! Your ₹${selectedPdf.price} PDF download has started.`
+              '✅ Payment Successful! Your PDF download has started.'
             );
 
           } catch (error) {
@@ -324,55 +308,38 @@ export default function Home() {
             );
           } finally {
             setLoading(false);
-
             paymentStartedRef.current =
               false;
           }
         },
 
-        // --------------------------------
         // CUSTOMER DETAILS
-        // --------------------------------
-
         prefill: {
           name: '',
           email: '',
           contact: '',
         },
 
-        // --------------------------------
         // THEME
-        // --------------------------------
-
         theme: {
           color: '#1565c0',
         },
 
-        // --------------------------------
         // PAYMENT WINDOW CLOSED
-        // --------------------------------
-
         modal: {
           ondismiss: function () {
             setLoading(false);
-
             paymentStartedRef.current =
               false;
           },
         },
       };
 
-      // --------------------------------
       // OPEN RAZORPAY
-      // --------------------------------
-
       const razorpay =
         new window.Razorpay(options);
 
-      // --------------------------------
       // PAYMENT FAILED
-      // --------------------------------
-
       razorpay.on(
         'payment.failed',
         function (response) {
@@ -569,9 +536,8 @@ export default function Home() {
             }}
           >
             Select the required PDF,
-            make the payment shown for the
-            selected document, and download
-            your PDF instantly.
+            make a secure payment of ₹99,
+            and download your PDF instantly.
           </p>
         </div>
 
@@ -641,9 +607,7 @@ export default function Home() {
                     if (loading) return;
 
                     setSelectedPdf(pdf);
-
                     setSuccessMessage('');
-
                     setPdfUrl('');
                   }}
                   style={{
@@ -653,9 +617,7 @@ export default function Home() {
                         : '1px solid #e1e5eb',
 
                     borderRadius: '12px',
-
                     padding: '15px',
-
                     marginBottom: '10px',
 
                     cursor:
@@ -714,16 +676,13 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* DYNAMIC PRICE */}
-
                     <div
                       style={{
                         fontWeight: 'bold',
                         color: '#1565c0',
-                        fontSize: '17px',
                       }}
                     >
-                      ₹{pdf.price}
+                      ₹99
                     </div>
 
                   </div>
@@ -768,8 +727,6 @@ export default function Home() {
               {selectedPdf.name}
             </h3>
 
-            {/* DYNAMIC PRICE */}
-
             <div
               style={{
                 fontSize: '24px',
@@ -778,10 +735,8 @@ export default function Home() {
                 marginBottom: '15px',
               }}
             >
-              ₹{selectedPdf.price}
+              ₹99
             </div>
-
-            {/* PAYMENT BUTTON */}
 
             <button
               onClick={handlePayment}
@@ -798,9 +753,7 @@ export default function Home() {
                     : '#1565c0',
 
                 color: 'white',
-
                 fontSize: '17px',
-
                 fontWeight: 'bold',
 
                 cursor:
@@ -814,7 +767,7 @@ export default function Home() {
             >
               {loading
                 ? '⏳ Processing Payment...'
-                : `💳 Pay ₹${selectedPdf.price} & Download PDF`}
+                : '💳 Pay ₹99 & Download PDF'}
             </button>
 
           </div>
@@ -1061,32 +1014,17 @@ export default function Home() {
             products, please contact us.
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Business Name:</strong>{' '}
             SR E-Print Online
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Contact Person:</strong>{' '}
             Gs Raju
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Email:</strong>{' '}
             <a
               href="mailto:sronline99890@gmail.com"
@@ -1099,12 +1037,7 @@ export default function Home() {
             </a>
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Phone / WhatsApp:</strong>{' '}
             <a
               href="tel:+919989057683"
@@ -1117,12 +1050,7 @@ export default function Home() {
             </a>
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
+          <p style={{ margin: '6px 0', color: '#555' }}>
             <strong>Business Hours:</strong>{' '}
             Monday to Saturday, 9:00 AM to 6:00 PM
           </p>
@@ -1232,20 +1160,3 @@ export default function Home() {
     </main>
   );
 }
-
-⚠️ చాలా ముఖ్యమైన విషయం
-
-పై "page.js" మాత్రమే మార్చితే సరిపోదు.
-
-మీ "/create-order" route కూడా "pdfs.js" నుంచి selected PDF price తీసుకుని Razorpay order amount set చేయాలి.
-
-అంటే:
-
-Birth-appli → ₹99 → Razorpay ₹99
-Sample1     → ₹20 → Razorpay ₹20
-newdoc      → ₹99 → Razorpay ₹99
-TSMSIDC     → ₹99 → Razorpay ₹99
-
-Frontendలో price చూపించడం మాత్రమే కాదు; server-side "/create-order" లో కూడా price verify చేయాలి. లేకపోతే customer request మార్చి తక్కువ amountతో order create చేసే అవకాశం ఉంటుంది.
-
-మీరు ప్రస్తుతం ఉపయోగిస్తున్న "app/create-order/route.js" code పంపండి. దాన్ని కూడా ఈ multiple-price systemకి సరిపోయేలా complete codeగా మార్చి ఇస్తాను.
