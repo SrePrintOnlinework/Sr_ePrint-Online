@@ -1,5 +1,3 @@
-import './globals.css';
-
 export const metadata = {
   title: 'SR INTERNET Online Centre',
   description: 'Digital PDF & Online Services',
