@@ -97,9 +97,7 @@ export default function Home() {
     setPdfUrl('');
 
     try {
-      // --------------------------------
       // LOAD RAZORPAY
-      // --------------------------------
 
       const razorpayLoaded =
         await loadRazorpayScript();
@@ -110,9 +108,7 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
       // CREATE ORDER
-      // --------------------------------
 
       const orderRes = await fetch(
         '/create-order',
@@ -157,9 +153,7 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
       // RAZORPAY KEY
-      // --------------------------------
 
       const razorpayKey =
         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -170,9 +164,7 @@ export default function Home() {
         );
       }
 
-      // --------------------------------
       // RAZORPAY OPTIONS
-      // --------------------------------
 
       const options = {
         key: razorpayKey,
@@ -202,9 +194,7 @@ export default function Home() {
           color: '#1565c0',
         },
 
-        // --------------------------------
         // PAYMENT SUCCESS
-        // --------------------------------
 
         handler: async function (response) {
           try {
@@ -212,9 +202,7 @@ export default function Home() {
               return;
             }
 
-            // --------------------------------
             // VERIFY PAYMENT
-            // --------------------------------
 
             const verifyRes =
               await fetch(
@@ -243,18 +231,14 @@ export default function Home() {
                 }
               );
 
-            // --------------------------------
             // READ RESPONSE
-            // --------------------------------
 
             const contentType =
               verifyRes.headers.get(
                 'content-type'
               ) || '';
 
-            // --------------------------------
             // JSON RESPONSE
-            // --------------------------------
 
             if (
               contentType.includes(
@@ -271,7 +255,6 @@ export default function Home() {
                 );
               }
 
-              // If backend returns a PDF URL
               if (data?.pdfUrl) {
                 const fileUrl =
                   data.pdfUrl.startsWith('http')
@@ -317,9 +300,7 @@ export default function Home() {
               );
             }
 
-            // --------------------------------
             // PDF/BLOB RESPONSE
-            // --------------------------------
 
             if (!verifyRes.ok) {
               throw new Error(
@@ -339,9 +320,7 @@ export default function Home() {
               );
             }
 
-            // --------------------------------
             // CHECK PDF
-            // --------------------------------
 
             const pdfBlob =
               new Blob(
@@ -358,9 +337,7 @@ export default function Home() {
 
             setPdfUrl(url);
 
-            // --------------------------------
             // FILE NAME
-            // --------------------------------
 
             const originalName =
               selectedPdf.file ||
@@ -380,18 +357,14 @@ export default function Home() {
             const uniqueFileName =
               `${baseName}-payment-${response.razorpay_payment_id}.pdf`;
 
-            // --------------------------------
             // DOWNLOAD
-            // --------------------------------
 
             downloadPdf(
               url,
               uniqueFileName
             );
 
-            // --------------------------------
             // SUCCESS
-            // --------------------------------
 
             setSuccessMessage(
               '✅ Payment Successful! Your PDF download has started.'
@@ -417,9 +390,7 @@ export default function Home() {
           }
         },
 
-        // --------------------------------
         // PAYMENT WINDOW CLOSED
-        // --------------------------------
 
         modal: {
           ondismiss: function () {
@@ -430,16 +401,12 @@ export default function Home() {
         },
       };
 
-      // --------------------------------
       // OPEN RAZORPAY
-      // --------------------------------
 
       const razorpay =
         new window.Razorpay(options);
 
-      // --------------------------------
       // PAYMENT FAILED
-      // --------------------------------
 
       razorpay.on(
         'payment.failed',
@@ -646,36 +613,41 @@ export default function Home() {
           </p>
         </div>
 
-        {/* SEARCH */}
+        {/* ====================================
+            HIGHLIGHTED SEARCH BOX
+        ==================================== */}
 
         <div
           style={{
             background:
-              'linear-gradient(135deg, #e3f2fd, #ffffff)',
+              'linear-gradient(135deg, #e3f2fd 0%, #ffffff 50%, #e8f5e9 100%)',
             border:
-              '1px solid #90caf9',
-            borderRadius: '15px',
-            padding: '15px',
+              '3px solid #1976d2',
+            borderRadius: '18px',
+            padding: '18px',
             marginBottom: '20px',
             boxShadow:
-              '0 5px 18px rgba(21,101,192,0.13)',
+              '0 6px 20px rgba(25,118,210,0.22)',
           }}
         >
+
+          {/* SEARCH TITLE */}
 
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '7px',
+              justifyContent: 'center',
+              gap: '8px',
+              color: '#0d47a1',
+              marginBottom: '12px',
+              fontSize: '18px',
               fontWeight: 'bold',
-              color: '#1565c0',
-              marginBottom: '9px',
-              fontSize: '15px',
             }}
           >
             <span
               style={{
-                fontSize: '20px',
+                fontSize: '24px',
               }}
             >
               🔎
@@ -686,6 +658,8 @@ export default function Home() {
             </span>
           </div>
 
+          {/* SEARCH INPUT */}
+
           <div
             style={{
               position: 'relative',
@@ -695,12 +669,13 @@ export default function Home() {
             <span
               style={{
                 position: 'absolute',
-                left: '15px',
+                left: '16px',
                 top: '50%',
                 transform:
                   'translateY(-50%)',
-                fontSize: '20px',
+                fontSize: '22px',
                 pointerEvents: 'none',
+                zIndex: 2,
               }}
             >
               🔍
@@ -717,30 +692,52 @@ export default function Home() {
                 width: '100%',
                 boxSizing: 'border-box',
                 padding:
-                  '15px 15px 15px 47px',
-                fontSize: '16px',
-                fontWeight: '500',
+                  '17px 18px 17px 52px',
+                fontSize: '17px',
+                fontWeight: '600',
                 border:
-                  '2px solid #1976d2',
-                borderRadius: '10px',
+                  '3px solid #1565c0',
+                borderRadius: '12px',
                 outline: 'none',
-                background: '#e3f2fd',
+                background: '#ffffff',
                 color: '#222',
+                boxShadow:
+                  '0 0 0 4px rgba(21,101,192,0.10), 0 5px 12px rgba(21,101,192,0.15)',
+              }}
+              onFocus={(e) => {
+                e.target.style.border =
+                  '3px solid #0d47a1';
+
+                e.target.style.boxShadow =
+                  '0 0 0 5px rgba(25,118,210,0.18), 0 6px 15px rgba(21,101,192,0.20)';
+              }}
+              onBlur={(e) => {
+                e.target.style.border =
+                  '3px solid #1565c0';
+
+                e.target.style.boxShadow =
+                  '0 0 0 4px rgba(21,101,192,0.10), 0 5px 12px rgba(21,101,192,0.15)';
               }}
             />
 
           </div>
 
+          {/* SEARCH RESULT COUNT */}
+
           {search && (
             <div
               style={{
-                marginTop: '7px',
-                fontSize: '13px',
-                color: '#666',
+                marginTop: '10px',
+                textAlign: 'center',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#1565c0',
+                background: '#e3f2fd',
+                padding: '7px',
+                borderRadius: '8px',
               }}
             >
-              {filteredPdfs.length}{' '}
-              PDF
+              {filteredPdfs.length} PDF
               {filteredPdfs.length !== 1
                 ? 's'
                 : ''}{' '}
@@ -1286,18 +1283,34 @@ export default function Home() {
             please contact us.
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Business Name:</strong>{' '}
             SR E-Print Online
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Contact Person:</strong>{' '}
             Gs Raju
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Email:</strong>{' '}
+
             <a
               href="mailto:sronline99890@gmail.com"
               style={{
@@ -1309,8 +1322,14 @@ export default function Home() {
             </a>
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Phone / WhatsApp:</strong>{' '}
+
             <a
               href="tel:+919989057683"
               style={{
@@ -1322,7 +1341,12 @@ export default function Home() {
             </a>
           </p>
 
-          <p style={{ margin: '6px 0', color: '#555' }}>
+          <p
+            style={{
+              margin: '6px 0',
+              color: '#555',
+            }}
+          >
             <strong>Business Hours:</strong>{' '}
             Monday to Saturday, 9:00 AM to 6:00 PM
           </p>
