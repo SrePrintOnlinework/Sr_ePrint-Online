@@ -13,6 +13,10 @@ export default function Home() {
   const paymentStartedRef = useRef(false);
   const downloadStartedRef = useRef(false);
 
+  // ------------------------------------
+  // LOAD RAZORPAY
+  // ------------------------------------
+
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       if (window.Razorpay) {
@@ -21,7 +25,9 @@ export default function Home() {
       }
 
       const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+
+      script.src =
+        'https://checkout.razorpay.com/v1/checkout.js';
 
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
@@ -30,37 +36,54 @@ export default function Home() {
     });
   };
 
+  // ------------------------------------
+  // PAYMENT
+  // ------------------------------------
+
   const handlePayment = async () => {
     if (!selectedPdf) {
       alert('Please select a PDF first.');
       return;
     }
 
-    if (paymentStartedRef.current) return;
+    if (paymentStartedRef.current) {
+      return;
+    }
 
     paymentStartedRef.current = true;
     downloadStartedRef.current = false;
 
     setLoading(true);
+
+    // IMPORTANT:
+    // Clear old success state before starting payment
     setSuccessMessage('');
     setPdfUrl('');
 
     try {
-      const razorpayLoaded = await loadRazorpayScript();
+      // LOAD RAZORPAY
+      const razorpayLoaded =
+        await loadRazorpayScript();
 
       if (!razorpayLoaded) {
-        throw new Error('Razorpay SDK failed to load.');
+        throw new Error(
+          'Razorpay SDK failed to load.'
+        );
       }
 
-      const orderRes = await fetch('/create-order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pdfId: selectedPdf.id,
-        }),
-      });
+      // CREATE ORDER
+      const orderRes = await fetch(
+        '/create-order',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            pdfId: selectedPdf.id,
+          }),
+        }
+      );
 
       let orderData;
 
@@ -68,14 +91,14 @@ export default function Home() {
         orderData = await orderRes.json();
       } catch {
         throw new Error(
-          'Server returned an invalid response.'
+          'Server returned an invalid response. Please try again.'
         );
       }
 
       if (!orderRes.ok) {
         throw new Error(
           orderData?.error ||
-            'Failed to create payment order'
+          'Failed to create payment order'
         );
       }
 
@@ -85,30 +108,41 @@ export default function Home() {
         );
       }
 
+      // RAZORPAY PUBLIC KEY
       const razorpayKey =
         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
       if (!razorpayKey) {
         throw new Error(
-          'Razorpay Key ID is missing.'
+          'Razorpay Key ID is missing. Please check Vercel Environment Variables.'
         );
       }
+
+      // ------------------------------------
+      // RAZORPAY OPTIONS
+      // ------------------------------------
 
       const options = {
         key: razorpayKey,
 
-        // Amount comes from server
-        amount: orderData.amount,
+        amount:
+          orderData.amount || 9900,
 
         currency:
           orderData.currency || 'INR',
 
-        name: 'SR INTERNET Online Centre',
+        name:
+          'SR INTERNET Online Centre',
 
         description:
           `Digital PDF - ${selectedPdf.name}`,
 
-        order_id: orderData.orderId,
+        order_id:
+          orderData.orderId,
+
+        // --------------------------------
+        // PAYMENT SUCCESS
+        // --------------------------------
 
         handler: async function (response) {
           try {
@@ -116,28 +150,33 @@ export default function Home() {
               return;
             }
 
-            const verifyRes = await fetch(
-              '/verify-payment',
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type':
-                    'application/json',
-                },
-                body: JSON.stringify({
-                  razorpay_order_id:
-                    response.razorpay_order_id,
+            // VERIFY PAYMENT
+            const verifyRes =
+              await fetch(
+                '/verify-payment',
+                {
+                  method: 'POST',
 
-                  razorpay_payment_id:
-                    response.razorpay_payment_id,
+                  headers: {
+                    'Content-Type':
+                      'application/json',
+                  },
 
-                  razorpay_signature:
-                    response.razorpay_signature,
+                  body: JSON.stringify({
+                    razorpay_order_id:
+                      response.razorpay_order_id,
 
-                  pdfId: selectedPdf.id,
-                }),
-              }
-            );
+                    razorpay_payment_id:
+                      response.razorpay_payment_id,
+
+                    razorpay_signature:
+                      response.razorpay_signature,
+
+                    pdfId:
+                      selectedPdf.id,
+                  }),
+                }
+              );
 
             if (!verifyRes.ok) {
               let errorMessage =
@@ -150,26 +189,49 @@ export default function Home() {
                 errorMessage =
                   errorData?.error ||
                   errorMessage;
-              } catch {}
+              } catch {
+                errorMessage =
+                  'Payment verification failed.';
+              }
 
-              throw new Error(errorMessage);
+              throw new Error(
+                errorMessage
+              );
             }
 
+            // GET PDF
             const blob =
               await verifyRes.blob();
 
-            if (!blob || blob.size === 0) {
+            if (
+              !blob ||
+              blob.size === 0
+            ) {
               throw new Error(
                 'PDF file is empty'
               );
             }
 
+            // --------------------------------
+            // PREVENT DUPLICATE DOWNLOAD
+            // --------------------------------
+
             downloadStartedRef.current = true;
 
+            // --------------------------------
+            // CREATE PDF URL
+            // --------------------------------
+
             const url =
-              window.URL.createObjectURL(blob);
+              window.URL.createObjectURL(
+                blob
+              );
 
             setPdfUrl(url);
+
+            // --------------------------------
+            // UNIQUE FILE NAME
+            // --------------------------------
 
             const originalName =
               selectedPdf.file;
@@ -177,8 +239,11 @@ export default function Home() {
             const dotIndex =
               originalName.lastIndexOf('.');
 
-            let baseName = originalName;
-            let extension = '.pdf';
+            let baseName =
+              originalName;
+
+            let extension =
+              '.pdf';
 
             if (dotIndex > 0) {
               baseName =
@@ -196,24 +261,39 @@ export default function Home() {
             const uniqueFileName =
               `${baseName}-payment-${response.razorpay_payment_id}${extension}`;
 
+            // --------------------------------
+            // AUTOMATIC DOWNLOAD
+            // --------------------------------
+
             const link =
               document.createElement('a');
 
             link.href = url;
+
             link.download =
               uniqueFileName;
 
-            link.style.display = 'none';
+            link.style.display =
+              'none';
 
-            document.body.appendChild(link);
+            document.body.appendChild(
+              link
+            );
 
             link.click();
 
-            document.body.removeChild(link);
+            document.body.removeChild(
+              link
+            );
+
+            // --------------------------------
+            // SUCCESS MESSAGE
+            // --------------------------------
 
             setSuccessMessage(
               '✅ Payment Successful! Your PDF download has started.'
             );
+
           } catch (error) {
             console.error(
               'Payment verification/download error:',
@@ -233,16 +313,19 @@ export default function Home() {
           }
         },
 
+        // CUSTOMER DETAILS
         prefill: {
           name: '',
           email: '',
           contact: '',
         },
 
+        // THEME
         theme: {
           color: '#1565c0',
         },
 
+        // PAYMENT WINDOW CLOSED
         modal: {
           ondismiss: function () {
             setLoading(false);
@@ -252,9 +335,11 @@ export default function Home() {
         },
       };
 
+      // OPEN RAZORPAY
       const razorpay =
         new window.Razorpay(options);
 
+      // PAYMENT FAILED
       razorpay.on(
         'payment.failed',
         function (response) {
@@ -278,6 +363,7 @@ export default function Home() {
       );
 
       razorpay.open();
+
     } catch (error) {
       console.error(
         'Payment error:',
@@ -294,29 +380,37 @@ export default function Home() {
 
       alert(
         'Something went wrong: ' +
-          error.message
+        error.message
       );
     }
   };
 
-  const filteredPdfs = pdfs.filter(
-    (pdf) =>
+  // ------------------------------------
+  // SEARCH
+  // ------------------------------------
+
+  const filteredPdfs =
+    pdfs.filter((pdf) =>
       pdf.name
         .toLowerCase()
         .includes(
           search.toLowerCase()
         )
-  );
+    );
+
+  // ------------------------------------
+  // PAGE
+  // ------------------------------------
 
   return (
     <main
       style={{
         minHeight: '100vh',
         background: '#f4f7fb',
-        fontFamily:
-          'Arial, sans-serif',
+        fontFamily: 'Arial, sans-serif',
       }}
     >
+
       {/* HEADER */}
 
       <header
@@ -362,22 +456,23 @@ export default function Home() {
         </div>
       </header>
 
+      {/* MAIN */}
+
       <section
         style={{
           maxWidth: '800px',
           margin: '0 auto',
-          padding:
-            '25px 15px 40px',
+          padding: '25px 15px 40px',
         }}
       >
+
         {/* SUCCESS MESSAGE */}
 
         {successMessage && (
           <div
             style={{
               background: '#e8f5e9',
-              border:
-                '1px solid #81c784',
+              border: '1px solid #81c784',
               color: '#2e7d32',
               padding: '15px',
               borderRadius: '12px',
@@ -398,12 +493,10 @@ export default function Home() {
                   display: 'block',
                   marginTop: '12px',
                   padding: '13px',
-                  background:
-                    '#2e7d32',
+                  background: '#2e7d32',
                   color: 'white',
                   borderRadius: '10px',
-                  textDecoration:
-                    'none',
+                  textDecoration: 'none',
                   fontWeight: 'bold',
                 }}
               >
@@ -443,9 +536,8 @@ export default function Home() {
             }}
           >
             Select the required PDF,
-            make a secure payment,
-            and download your PDF
-            instantly.
+            make a secure payment of ₹99,
+            and download your PDF instantly.
           </p>
         </div>
 
@@ -463,8 +555,7 @@ export default function Home() {
             boxSizing: 'border-box',
             padding: '15px',
             fontSize: '16px',
-            border:
-              '1px solid #d5dbe3',
+            border: '1px solid #d5dbe3',
             borderRadius: '12px',
             outline: 'none',
             marginBottom: '15px',
@@ -494,78 +585,66 @@ export default function Home() {
             Available PDFs
           </h3>
 
-          {filteredPdfs.length ===
-          0 ? (
+          {filteredPdfs.length === 0 ? (
+
             <p
               style={{
-                padding:
-                  '20px 10px',
+                padding: '20px 10px',
                 textAlign: 'center',
                 color: '#777',
               }}
             >
               No PDF found.
             </p>
+
           ) : (
+
             filteredPdfs.map(
               (pdf) => (
                 <div
                   key={pdf.id}
                   onClick={() => {
-                    if (loading)
-                      return;
+                    if (loading) return;
 
-                    setSelectedPdf(
-                      pdf
-                    );
-
-                    setSuccessMessage(
-                      ''
-                    );
-
+                    setSelectedPdf(pdf);
+                    setSuccessMessage('');
                     setPdfUrl('');
                   }}
                   style={{
                     border:
-                      selectedPdf?.id ===
-                      pdf.id
+                      selectedPdf?.id === pdf.id
                         ? '2px solid #1565c0'
                         : '1px solid #e1e5eb',
 
-                    borderRadius:
-                      '12px',
-
+                    borderRadius: '12px',
                     padding: '15px',
+                    marginBottom: '10px',
 
-                    marginBottom:
-                      '10px',
-
-                    cursor: loading
-                      ? 'not-allowed'
-                      : 'pointer',
+                    cursor:
+                      loading
+                        ? 'not-allowed'
+                        : 'pointer',
 
                     background:
-                      selectedPdf?.id ===
-                      pdf.id
+                      selectedPdf?.id === pdf.id
                         ? '#eef6ff'
                         : 'white',
 
                     transition: '0.2s',
                   }}
                 >
+
                   <div
                     style={{
-                      display:
-                        'flex',
-                      alignItems:
-                        'center',
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: '12px',
                     }}
                   >
+
                     <div
                       style={{
-                        fontSize:
-                          '32px',
+                        fontSize: '32px',
                       }}
                     >
                       📄
@@ -578,12 +657,9 @@ export default function Home() {
                     >
                       <div
                         style={{
-                          fontWeight:
-                            'bold',
-                          color:
-                            '#222',
-                          fontSize:
-                            '16px',
+                          fontWeight: 'bold',
+                          color: '#222',
+                          fontSize: '16px',
                         }}
                       >
                         {pdf.name}
@@ -591,34 +667,29 @@ export default function Home() {
 
                       <div
                         style={{
-                          color:
-                            '#777',
-                          fontSize:
-                            '13px',
-                          marginTop:
-                            '4px',
+                          color: '#777',
+                          fontSize: '13px',
+                          marginTop: '4px',
                         }}
                       >
                         PDF Document
                       </div>
                     </div>
 
-                    {/* DIFFERENT PRICE */}
-
                     <div
                       style={{
-                        fontWeight:
-                          'bold',
-                        color:
-                          '#1565c0',
+                        fontWeight: 'bold',
+                        color: '#1565c0',
                       }}
                     >
-                      ₹{pdf.price}
+                      ₹99
                     </div>
+
                   </div>
                 </div>
               )
             )
+
           )}
         </div>
 
@@ -637,6 +708,7 @@ export default function Home() {
                 '0 3px 12px rgba(0,0,0,0.07)',
             }}
           >
+
             <div
               style={{
                 color: '#555',
@@ -648,59 +720,56 @@ export default function Home() {
 
             <h3
               style={{
-                margin:
-                  '0 0 15px',
+                margin: '0 0 15px',
                 color: '#222',
               }}
             >
               {selectedPdf.name}
             </h3>
 
-            {/* SELECTED PDF PRICE */}
-
             <div
               style={{
                 fontSize: '24px',
                 fontWeight: 'bold',
                 color: '#1565c0',
-                marginBottom:
-                  '15px',
+                marginBottom: '15px',
               }}
             >
-              ₹{selectedPdf.price}
+              ₹99
             </div>
 
-            {/* PAYMENT BUTTON */}
-
             <button
-              onClick={
-                handlePayment
-              }
+              onClick={handlePayment}
               disabled={loading}
               style={{
                 width: '100%',
                 padding: '15px',
                 border: 'none',
                 borderRadius: '10px',
-                background: loading
-                  ? '#999'
-                  : '#1565c0',
+
+                background:
+                  loading
+                    ? '#999'
+                    : '#1565c0',
+
                 color: 'white',
                 fontSize: '17px',
-                fontWeight:
-                  'bold',
-                cursor: loading
-                  ? 'not-allowed'
-                  : 'pointer',
-                opacity: loading
-                  ? 0.8
-                  : 1,
+                fontWeight: 'bold',
+
+                cursor:
+                  loading
+                    ? 'not-allowed'
+                    : 'pointer',
+
+                opacity:
+                  loading ? 0.8 : 1,
               }}
             >
               {loading
                 ? '⏳ Processing Payment...'
-                : `💳 Pay ₹${selectedPdf.price} & Download PDF`}
+                : '💳 Pay ₹99 & Download PDF'}
             </button>
+
           </div>
         )}
 
@@ -732,10 +801,9 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            SR E-Print Online is a
-            digital document service
-            platform that provides
-            downloadable PDF and
+            SR E-Print Online is a digital
+            document service platform that
+            provides downloadable PDF and
             digital document files to
             customers online.
           </p>
@@ -751,9 +819,8 @@ export default function Home() {
             available digital products,
             select the required file,
             make an online payment, and
-            download the purchased
-            digital file after
-            successful payment.
+            download the purchased digital
+            file after successful payment.
           </p>
 
           <p
@@ -763,12 +830,11 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            Our aim is to provide
-            convenient and quick access
-            to useful digital documents
-            and printable files through
-            an easy-to-use online
-            platform.
+            Our aim is to provide convenient
+            and quick access to useful
+            digital documents and printable
+            files through an easy-to-use
+            online platform.
           </p>
         </div>
 
@@ -801,34 +867,12 @@ export default function Home() {
               lineHeight: 1.9,
             }}
           >
-            <li>
-              Digital PDF documents
-            </li>
-
-            <li>
-              Printable document files
-            </li>
-
-            <li>
-              Ready-to-use document
-              formats and templates
-            </li>
-
-            <li>
-              Application and
-              form-related digital files
-            </li>
-
-            <li>
-              Educational and
-              reference PDF materials
-            </li>
-
-            <li>
-              Other digital document
-              files available on our
-              website
-            </li>
+            <li>Digital PDF documents</li>
+            <li>Printable document files</li>
+            <li>Ready-to-use document formats and templates</li>
+            <li>Application and form-related digital files</li>
+            <li>Educational and reference PDF materials</li>
+            <li>Other digital document files available on our website</li>
           </ul>
         </div>
 
@@ -861,46 +905,22 @@ export default function Home() {
               lineHeight: 1.9,
             }}
           >
-            <li>
-              Browse the available
-              digital products.
-            </li>
-
-            <li>
-              Select the required PDF
-              or digital file.
-            </li>
-
-            <li>
-              Proceed to online
-              payment.
-            </li>
-
-            <li>
-              Complete the payment
-              using the available
-              payment methods.
-            </li>
-
-            <li>
-              After successful
-              payment, download the
-              purchased digital file.
-            </li>
+            <li>Browse the available digital products.</li>
+            <li>Select the required PDF or digital file.</li>
+            <li>Proceed to online payment.</li>
+            <li>Complete the payment using the available payment methods.</li>
+            <li>After successful payment, download the purchased digital file.</li>
           </ol>
 
           <p
             style={{
-              margin:
-                '12px 0 0',
+              margin: '12px 0 0',
               color: '#555',
               lineHeight: 1.6,
             }}
           >
-            Digital products are
-            delivered electronically.
-            No physical product is
-            shipped.
+            Digital products are delivered electronically.
+            No physical product is shipped.
           </p>
         </div>
 
@@ -918,8 +938,7 @@ export default function Home() {
         >
           <h2
             style={{
-              margin:
-                '0 0 10px',
+              margin: '0 0 10px',
               color: '#222',
             }}
           >
@@ -928,28 +947,24 @@ export default function Home() {
 
           <p
             style={{
-              margin:
-                '0 0 10px',
+              margin: '0 0 10px',
               color: '#555',
               lineHeight: 1.6,
             }}
           >
-            We accept online payments
-            through the payment methods
-            available at checkout.
+            We accept online payments through
+            the payment methods available at checkout.
           </p>
 
           <p
             style={{
-              margin:
-                '0 0 10px',
+              margin: '0 0 10px',
               color: '#555',
               lineHeight: 1.6,
             }}
           >
-            All prices displayed on
-            the website are in Indian
-            Rupees (INR).
+            All prices displayed on the website
+            are in Indian Rupees (INR).
           </p>
 
           <p
@@ -959,13 +974,10 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            After successful payment,
-            the purchased digital
-            PDF/file is delivered
-            electronically and can be
-            downloaded by the
-            customer. No physical
-            product will be shipped.
+            After successful payment, the purchased
+            digital PDF/file is delivered electronically
+            and can be downloaded by the customer.
+            No physical product will be shipped.
           </p>
         </div>
 
@@ -983,8 +995,7 @@ export default function Home() {
         >
           <h2
             style={{
-              margin:
-                '0 0 10px',
+              margin: '0 0 10px',
               color: '#222',
             }}
           >
@@ -993,96 +1004,55 @@ export default function Home() {
 
           <p
             style={{
-              margin:
-                '0 0 10px',
+              margin: '0 0 10px',
               color: '#555',
               lineHeight: 1.6,
             }}
           >
-            For any questions,
-            payment-related issues, or
-            assistance with our digital
-            products, please contact
-            us.
+            For any questions, payment-related
+            issues, or assistance with our digital
+            products, please contact us.
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
-            <strong>
-              Business Name:
-            </strong>{' '}
+          <p style={{ margin: '6px 0', color: '#555' }}>
+            <strong>Business Name:</strong>{' '}
             SR E-Print Online
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
-            <strong>
-              Contact Person:
-            </strong>{' '}
+          <p style={{ margin: '6px 0', color: '#555' }}>
+            <strong>Contact Person:</strong>{' '}
             Gs Raju
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
-            <strong>
-              Email:
-            </strong>{' '}
+          <p style={{ margin: '6px 0', color: '#555' }}>
+            <strong>Email:</strong>{' '}
             <a
               href="mailto:sronline99890@gmail.com"
               style={{
                 color: '#1565c0',
-                textDecoration:
-                  'none',
+                textDecoration: 'none',
               }}
             >
               sronline99890@gmail.com
             </a>
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
-            <strong>
-              Phone / WhatsApp:
-            </strong>{' '}
+          <p style={{ margin: '6px 0', color: '#555' }}>
+            <strong>Phone / WhatsApp:</strong>{' '}
             <a
               href="tel:+919989057683"
               style={{
                 color: '#1565c0',
-                textDecoration:
-                  'none',
+                textDecoration: 'none',
               }}
             >
               9989057683
             </a>
           </p>
 
-          <p
-            style={{
-              margin: '6px 0',
-              color: '#555',
-            }}
-          >
-            <strong>
-              Business Hours:
-            </strong>{' '}
-            Monday to Saturday,
-            9:00 AM to 6:00 PM
+          <p style={{ margin: '6px 0', color: '#555' }}>
+            <strong>Business Hours:</strong>{' '}
+            Monday to Saturday, 9:00 AM to 6:00 PM
           </p>
         </div>
 
@@ -1094,29 +1064,24 @@ export default function Home() {
             marginTop: '30px',
             color: '#777',
             fontSize: '13px',
-            paddingBottom:
-              '20px',
+            paddingBottom: '20px',
           }}
         >
           <div
             style={{
               display: 'flex',
-              justifyContent:
-                'center',
+              justifyContent: 'center',
               flexWrap: 'wrap',
               gap: '14px',
-              marginBottom:
-                '14px',
+              marginBottom: '14px',
             }}
           >
             <a
               href="/privacy"
               style={{
                 color: '#1565c0',
-                textDecoration:
-                  'none',
-                fontWeight:
-                  'bold',
+                textDecoration: 'none',
+                fontWeight: 'bold',
               }}
             >
               Privacy Policy
@@ -1128,10 +1093,8 @@ export default function Home() {
               href="/refund"
               style={{
                 color: '#1565c0',
-                textDecoration:
-                  'none',
-                fontWeight:
-                  'bold',
+                textDecoration: 'none',
+                fontWeight: 'bold',
               }}
             >
               Refund / Cancellation
@@ -1143,10 +1106,8 @@ export default function Home() {
               href="/terms"
               style={{
                 color: '#1565c0',
-                textDecoration:
-                  'none',
-                fontWeight:
-                  'bold',
+                textDecoration: 'none',
+                fontWeight: 'bold',
               }}
             >
               Terms & Conditions
@@ -1154,8 +1115,7 @@ export default function Home() {
           </div>
 
           <p>
-            Secure payment powered
-            by Razorpay
+            Secure payment powered by Razorpay
           </p>
 
           <p>
@@ -1163,9 +1123,12 @@ export default function Home() {
             All rights reserved.
           </p>
         </footer>
+
       </section>
 
-      {/* WHATSAPP */}
+      {/* ------------------------------------
+          FLOATING WHATSAPP HELP BUTTON
+          ------------------------------------ */}
 
       <a
         href="https://wa.me/919989057683?text=Hello%20SR%20E-Print%20Online,%20I%20need%20help%20regarding%20a%20PDF%20purchase."
@@ -1183,10 +1146,8 @@ export default function Home() {
           color: 'white',
           display: 'flex',
           alignItems: 'center',
-          justifyContent:
-            'center',
-          textDecoration:
-            'none',
+          justifyContent: 'center',
+          textDecoration: 'none',
           fontSize: '30px',
           boxShadow:
             '0 4px 14px rgba(0,0,0,0.25)',
@@ -1195,6 +1156,7 @@ export default function Home() {
       >
         💬
       </a>
+
     </main>
   );
 }
